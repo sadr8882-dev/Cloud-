@@ -86,7 +86,7 @@ export class World {
   private frustum = new THREE.Frustum();
   private m4 = new THREE.Matrix4(); private v = new THREE.Vector3(); private sph = new THREE.Sphere();
 
-  constructor(kit: Kit) {
+  constructor(kit: Kit, shadowSize = 4096) {
     const R = this.root;
     // ---- sky + light ----
     this.skyMat = new THREE.ShaderMaterial({
@@ -112,7 +112,7 @@ export class World {
     this.hemi = new THREE.HemisphereLight("#cfe6ff", "#6c5c8c", 1.1);
     this.sun = new THREE.DirectionalLight("#fff0d6", 2.6);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(4096, 4096);
+    this.sun.shadow.mapSize.set(shadowSize, shadowSize);
     R.add(this.hemi, this.sun, this.sun.target);
     this.cloudMaps = { day: [0, 1, 2, 3].map((k) => cloudHD(k, LOOK.day.cloud)), golden: [0, 1, 2, 3].map((k) => cloudHD(k, LOOK.golden.cloud)) };
     for (let i = 0; i < 9; i++) {
@@ -333,7 +333,7 @@ export class World {
       }
       pb.build(g);
       // plumb rope from the top edge, posed per frame
-      this.rope = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1, 6).translate(0, -0.5, 0), twoTone(new THREE.MeshLambertMaterial({ color: "#d9c79a" })));
+      this.rope = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1, 6).translate(0, -0.5, 0), twoTone(new THREE.MeshLambertMaterial({ color: "#d9c79a" })));
       this.bob = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 12).rotateX(Math.PI), twoTone(new THREE.MeshLambertMaterial({ color: "#b08a3c" })));
       g.add(this.rope, this.bob);
     }
@@ -446,7 +446,7 @@ export class World {
     this.grassTall.visible = false;
     this.era.tub.visible = id === 9;
     this.era.cement.visible = id === 12;
-    this.era.fence.visible = id === 13 || id === 14;
+    this.era.fence.visible = (id === 13 && f < 1754) || id === 14;
     this.era.drill.visible = id === 14;
     if (id === 13) {
       // rope from the outer edge of the belfry terrace, low side, straight down to the ground

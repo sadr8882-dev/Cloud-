@@ -226,7 +226,7 @@ const CAMS: Record<number, Key[]> = {
   ],
   13: [
     { f: 1636, s: (f) => dolly([-6, 18, 88], [3, 27, 0], pushK(f, 1636, 0.002), { fov: 52 }) },
-    { f: F(W.chetyre) - 2, cut: true, s: (f) => { const r = ropeFoot(); const cx = (r + R_OUT + 0.8) / 2; return dolly([cx + 0.6, 1.7, 8.0], [cx, 1.0, 1.4], pushK(f, 1754, 0.0025), { fov: 44 }); } },
+    { f: F(W.chetyre) - 2, cut: true, s: (f) => { const r = ropeFoot(); const cx = (r + R_OUT + 0.8) / 2; return dolly([cx + 1.0, 1.3, 12.0], [cx + 0.7, 1.35, 1.2], pushK(f, 1754, 0.0025), { fov: 46 }); } },
   ],
   14: [
     { f: 1806, s: (f) => dolly([-4, -2.0, CUTZ + 34], [-2, 3, 0], pushK(f, 1806, 0.002), { fov: 54 }) },
@@ -275,7 +275,7 @@ export const DOF: Dof[] = [
   { f: 822, cInf: 0 },
   { f: 928, cInf: 15, focus: () => [TUB[0], 1.2, TUB[2] + 0.4] }, // sponge
   { f: 1061, cInf: 0 },
-  { f: F(W.poetomu) - 2, cInf: 9, focus: () => [0, 25, 0] }, // banana: tower sharp, foreground mason soft
+  { f: F(W.poetomu) - 2, cInf: 4, focus: () => [0, 25, 0] }, // banana: tower sharp, foreground mason soft
   { f: 1440, cInf: 0 },
   { f: F(W.zalili) - 14, dur: 30, cInf: 11 }, // cement pipe
   { f: F(W.naklonilas) - 2, cInf: 0 },

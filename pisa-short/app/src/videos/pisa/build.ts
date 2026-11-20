@@ -86,7 +86,7 @@ export const boxGeo = (min: THREE.Vector3, max: THREE.Vector3, tile = 0, bottom 
 
 /** collects pieces by material and merges them into one static mesh per material */
 export class Batch {
-  private g = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  private g = new Map<THREE.Material, Map<string, THREE.BufferGeometry[]>>();
   add(geo: THREE.BufferGeometry, mat: THREE.Material, m?: THREE.Matrix4) {
     const src = geo.index ? geo.toNonIndexed() : geo;
     const x = new THREE.BufferGeometry();
@@ -94,8 +94,15 @@ export class Batch {
     if (src.attributes.normal) x.setAttribute("normal", f32(src.attributes.normal)); else x.computeVertexNormals();
     x.setAttribute("uv", src.attributes.uv ? f32(src.attributes.uv) : new THREE.Float32BufferAttribute(new Float32Array(src.attributes.position.count * 2), 2));
     if (m) x.applyMatrix4(m);
-    const l = this.g.get(mat);
-    if (l) l.push(x); else this.g.set(mat, [x]);
+    // spatial chunks (40 m cells) so frustum culling skips what the lens and the sun's shadow camera cannot see
+    x.computeBoundingBox();
+    const c = x.boundingBox!.getCenter(new THREE.Vector3());
+    const big = x.boundingBox!.getSize(new THREE.Vector3()).length() > 120;
+    const key = big ? "big" : `${Math.floor(c.x / 40)},${Math.floor(c.z / 40)}`;
+    let byCell = this.g.get(mat);
+    if (!byCell) { byCell = new Map(); this.g.set(mat, byCell); }
+    const l = byCell.get(key);
+    if (l) l.push(x); else byCell.set(key, [x]);
   }
   addObject(o: THREE.Object3D, m: THREE.Matrix4) {
     o.updateMatrixWorld(true);
@@ -106,8 +113,10 @@ export class Batch {
     });
   }
   build(parent: THREE.Object3D, cast = true) {
-    for (const [mat, list] of this.g) {
-      const mesh = new THREE.Mesh(mergeGeometries(list, false), mat);
+    for (const [mat, cells] of this.g) for (const list of cells.values()) {
+      const geo = mergeGeometries(list, false);
+      geo.computeBoundingSphere();
+      const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = cast; mesh.receiveShadow = true; mesh.matrixAutoUpdate = false;
       parent.add(mesh);
     }
