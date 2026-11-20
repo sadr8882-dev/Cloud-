@@ -532,7 +532,7 @@ export const bodyFront = (p: Pen, o: Outfit, opts: FrontOpts) => {
       } else {
         const sq = Array.isArray(prop) ? clamp(prop[1], 0, 1) : 0;
         const half = prop === "block" ? 30 * u : prop === "camera" ? 16 * u : (24 - 7 * sq) * u;
-        const hy = prop === "block" ? torsoBot - 0.1 * HH : prop === "camera" ? chin - 0.05 * HH : chin + 0.42 * HH;
+        const hy = prop === "block" ? torsoBot - 0.1 * HH : prop === "camera" ? chin + 0.3 * HH : chin + 0.42 * HH;
         arms.push({ pts: [S, [tcx + side * (1.08 * T.a + 6 * u), S[1] + 0.42 * HH], [tcx + side * half, hy]], front: true });
       }
     }

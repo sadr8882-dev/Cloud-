@@ -27,7 +27,7 @@ const haloTex = () => ctex("sunHalo", 256, 256, (g) => {
   }
   g.putImageData(im, 0, 0);
 });
-const SUN_SHOT: Record<number, { az?: number; el?: number }> = { 2: { az: 110 }, 7: { az: 40, el: 9 }, 11: { az: 100, el: 42 }, 13: { az: 95 } };
+const SUN_SHOT: Record<number, { az?: number; el?: number }> = { 2: { az: 110 }, 4: { az: 130 }, 6: { az: 135 }, 7: { az: 130, el: 14 }, 9: { az: 125 }, 11: { az: 100, el: 42 }, 12: { az: 130 }, 13: { az: 120 }, 15: { az: 130 }, 16: { az: 130 } };
 
 const sightLines = (): Ray[] => {
   const out: Ray[] = [];

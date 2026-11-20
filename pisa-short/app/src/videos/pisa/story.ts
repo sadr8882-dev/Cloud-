@@ -166,14 +166,16 @@ const topPt = (id: number, f: number, x: number, dy: number, z: number) => {
   const st = towerAt(id, T(f)), { k } = topOf(st);
   return towerPt(st, k, x, scaffoldTop(st) + dy, z);
 };
-export const CUTZ = 8.25; // the cutaway plane (soil block front face)
+export const CUTZ = 8.25;
+/** x of the 1990 plumb rope's foot (shot 13), from the tower at that moment */
+export const ropeFoot = () => towerPt(towerAt(13, 56), 7, R_OUT + 0.15, LEVEL_H[7] - 5.6, 0)[0]; // the cutaway plane (soil block front face)
 export const TUB: V3 = [21, 0, 29];
-export const BANANA_AT: V3 = [-0.75, 0, 91.6];
+export const BANANA_AT: V3 = [-1.0, 0, 89.4];
 
 const CAMS: Record<number, Key[]> = {
   1: [
     { f: 0, s: (f) => dolly([16, 1.7, 40], [2.5, 15, 0], pushK(f, 0, 0.0028), { fov: 48 }) },
-    { f: F(W.padat) - 2, cut: true, s: (f) => { const p = topPt(1, f, 2.6, 1.25, 7.6); return dolly([p[0] + 5.0, p[1] + 0.5, p[2] + 6.4], [p[0], p[1], p[2]], pushK(f, 38, 0.003), { fov: 40, roll: -0.04 }); } },
+    { f: F(W.padat) - 2, cut: true, s: (f) => { const p = topPt(1, f, 2.0, 1.25, 7.9); return dolly([p[0] + 5.0, p[1] + 0.5, p[2] + 6.4], [p[0], p[1], p[2]], pushK(f, 38, 0.003), { fov: 40, roll: -0.04 }); } },
     { f: F(W.dostroili) - 2, cut: true, s: (f) => dolly([-8, 1.3, 26], [3, 17, 0], pushK(f, 89, 0.0035, 0.007, 30), { fov: 52, roll: 0.05 }) },
   ],
   2: [
@@ -197,7 +199,7 @@ const CAMS: Record<number, Key[]> = {
     { f: F(W.pereryv1) - 14, dur: 28, s: (f) => dolly([2.6, 2.4, 25], [0.2, 2.6, 10.4], pushK(f, 701, 0.002), { fov: 46, roll: 0.035 }) },
   ],
   7: [
-    { f: 728, s: (f) => dolly([3.0, 1.7, 22.5], [0.0, 3.0, 10.0], pushK(f, 728, 0.0025), { fov: 48 }) },
+    { f: 728, s: (f) => dolly([1.2, 1.4, 17.5], [-0.2, 1.7, 10.1], pushK(f, 728, 0.0025), { fov: 44 }) },
     { f: F(W.sto) - 10, dur: 24, s: (f) => dolly([0.4, 1.2, 14.6], [-0.2, 0.95, 10.1], pushK(f, 796, 0.004), { fov: 38, roll: -0.04 }) },
   ],
   8: [
@@ -214,8 +216,8 @@ const CAMS: Record<number, Key[]> = {
   ],
   11: [
     { f: 1190, s: (f) => zoom([36, 9, 72], [0, 26, 0], 50, pushK(f, 1190, 0.0012)) },
-    { f: F(W.poetomu) - 2, cut: true, s: (f) => dolly([0, 1.7, 96], [0.5, 25, 0], pushK(f, 1326, 0.0018), { fov: 44 }) },
-    { f: F(W.banan) - 12, dur: 24, s: (f) => dolly([-0.4, 1.9, 95], [0, 22, 0], pushK(f, 1407, 0.0025), { fov: 44, roll: 0.035 }) },
+    { f: F(W.poetomu) - 2, cut: true, s: (f) => zoom([0, 1.7, 96], [0.5, 25, 0], 46, pushK(f, 1326, 0.0018)) },
+    { f: F(W.banan) - 12, dur: 24, s: (f) => zoom([-0.4, 1.9, 95], [0, 22, 0], 44, pushK(f, 1407, 0.0025), { roll: 0.035 }) },
   ],
   12: [
     { f: 1436, s: (f) => dolly([21, 2.6, 34], [7.5, 4.0, 6], pushK(f, 1436, 0.0022), { fov: 46 }) },
@@ -224,18 +226,18 @@ const CAMS: Record<number, Key[]> = {
   ],
   13: [
     { f: 1636, s: (f) => dolly([-6, 18, 88], [3, 27, 0], pushK(f, 1636, 0.002), { fov: 52 }) },
-    { f: F(W.chetyre) - 2, cut: true, s: (f) => dolly([13.2, 1.7, 10.6], [10.0, 1.0, 1.4], pushK(f, 1754, 0.0025), { fov: 44 }) },
+    { f: F(W.chetyre) - 2, cut: true, s: (f) => { const r = ropeFoot(); const cx = (r + R_OUT + 0.8) / 2; return dolly([cx + 0.6, 1.7, 8.0], [cx, 1.0, 1.4], pushK(f, 1754, 0.0025), { fov: 44 }); } },
   ],
   14: [
     { f: 1806, s: (f) => dolly([-4, -2.0, CUTZ + 34], [-2, 3, 0], pushK(f, 1806, 0.002), { fov: 54 }) },
     { f: F(W.zemlyu) - 12, dur: 26, s: (f) => dolly([-9, -3.6, CUTZ + 16], [-9, -3.8, 0], pushK(f, 1851, 0.002), { fov: 44 }) },
     { f: F(W.vypryamilas) - 2, cut: true, s: (f) => dolly([1, -1.2, CUTZ + 38], [2, 5, 0], pushK(f, 1926, 0.0025), { fov: 54, roll: 0.035 }) },
   ],
-  15: [{ f: 1991, s: (f) => dolly([14, 1.7, 34], [2, 15, 0], pushK(f, 1991, 0.0022), { fov: 54 }) }],
+  15: [{ f: 1991, s: (f) => zoom([14, 1.6, 36], [3, 12, 0], 56, pushK(f, 1991, 0.0022)) }],
   16: [
-    { f: 2072, s: (f) => dolly([3.4, 1.5, 28.2], [5.6, 7.0, 0], pushK(f, 2072, 0.002), { fov: 50 }) },
+    { f: 2072, s: (f) => zoom([3.4, 1.5, 28.2], [5.6, 7.0, 0], 50, pushK(f, 2072, 0.002)) },
     { f: F(W.esche) - 2, cut: true, s: (f) => zoom([9, 2, 62], [3.6, 50, 0], 26, pushK(f, 2190, 0.0018)) },
-    { f: F(W.ochen) - 6, cut: true, s: (f) => dolly([-7, 1.6, 36], [3, 13, 0], pushK(f, 2243, 0.0016), { fov: 54 }) },
+    { f: F(W.ochen) - 6, cut: true, s: (f) => zoom([-7, 1.6, 36], [3, 12, 0], 56, pushK(f, 2243, 0.0016)) },
   ],
 };
 

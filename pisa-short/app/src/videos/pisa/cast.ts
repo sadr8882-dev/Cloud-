@@ -235,7 +235,7 @@ export const stage = (id: number, t: number, ts: TowerState, cam: CamInfo): Stag
   switch (id) {
     case 1: { // scaffold crew freezes as the tower goes over
       const shock = t > W.padat - L;
-      [[0.2, MASON, "grin"], [0.59, MASON3, "smile"], [0.98, MASON2, "neutral"]].forEach(([a, o, e], i) => {
+      [[0.07, MASON, "grin"], [0.3, MASON3, "smile"], [0.5, MASON2, "neutral"]].forEach(([a, o, e], i) => {
         const [x, y, z] = crewSpot(ts, a as number);
         const expr: Expr = shock ? (i === 1 ? "shock" : "nervous") : (e as Expr);
         out.places.push(person(cam, i, o as Outfit, x, y, z, { mode: "stand", expr, blink: shock ? 0 : lidAt(t, i), prop: i === 0 && !shock ? ["hammer", q(Math.abs(Math.sin(t * 5)), 20)] : null, look: shock ? (i ? -1 : 1) : 0 }));
@@ -247,13 +247,13 @@ export const stage = (id: number, t: number, ts: TowerState, cam: CamInfo): Stag
     case 2: { // masons at the stub; folk watching in the aerial
       if (t < W.kolokolnyu - 0.1) folkAt(cam, t, out, [[-10, 14], [-12.5, 16], [9.5, 15], [12, 13.5], [14.5, 17], [-15, 12]], [[W.piza - L, W.piza + 1.2]], 300);
       const hit = (t * 1.6) % 1;
-      out.places.push(person(cam, 10, MASON, -0.6, 0, 9.7, { mode: "stand", expr: "stern", prop: ["hammer", q(hit < 0.25 ? smooth(hit / 0.25) : 1 - smooth((hit - 0.25) / 0.75), 20)], blink: lidAt(t, 10) }));
-      blob(out, -0.6, 0, 9.7);
-      out.places.push(person(cam, 11, MASON2, 1.3, 0, 10.4, { mode: "stand", expr: "smile", prop: "block", blink: lidAt(t, 11) }));
-      blob(out, 1.3, 0, 10.4);
-      out.places.push(person(cam, 12, MASON3, 3.0, 0, 9.9, { mode: "stand", expr: "neutral", prop: "bucket", blink: lidAt(t, 12) }));
-      blob(out, 3.0, 0, 9.9, 1.1);
-      if (hit < 0.12 && t > W.kolokolnyu) out.fx.push({ key: `burst${q(hit / 0.12, 10)}`, cw: 300, ch: 300, draw: (p) => fxBurst(p, q(hit / 0.12, 10), "#fff3b0", 8, 30, 140), x: -0.15, y: 1.2, z: 10.0, w: 0.6, h: 0.6 });
+      out.places.push(person(cam, 10, MASON, -0.2, 0, 9.8, { mode: "stand", expr: "stern", prop: ["hammer", q(hit < 0.25 ? smooth(hit / 0.25) : 1 - smooth((hit - 0.25) / 0.75), 20)], blink: lidAt(t, 10) }));
+      blob(out, -0.2, 0, 9.8);
+      out.places.push(person(cam, 11, MASON2, 1.0, 0, 10.9, { mode: "stand", expr: "smile", prop: "block", blink: lidAt(t, 11) }));
+      blob(out, 1.0, 0, 10.9);
+      out.places.push(person(cam, 12, MASON3, 2.2, 0, 10.0, { mode: "stand", expr: "neutral", prop: "bucket", blink: lidAt(t, 12) }));
+      blob(out, 2.2, 0, 10.0, 1.1);
+      if (hit < 0.12 && t > W.kolokolnyu) out.fx.push({ key: `burst${q(hit / 0.12, 10)}`, cw: 300, ch: 300, draw: (p) => fxBurst(p, q(hit / 0.12, 10), "#fff3b0", 8, 30, 140), x: 0.25, y: 1.2, z: 10.1, w: 0.6, h: 0.6 });
       break;
     }
     case 3: case 11: { // crew on top while the floors go up
@@ -367,7 +367,7 @@ export const stage = (id: number, t: number, ts: TowerState, cam: CamInfo): Stag
       break;
     }
     case 13: { // 1990 engineers measure how far the top hangs out
-      const top = towerPt(ts, 7, R_OUT + 0.15, LEVEL_H[7] - 5.6, 0);
+      const top = towerPt(ts, 7, R_OUT + 0.15, LEVEL_H[7] - 5.6, 0); top[0] = Math.max(top[0], R_OUT + 2.5);
       const base = R_OUT + 0.45;
       out.places.push(person(cam, 90, ENGINEER[0], top[0] + 0.5, 0, 1.4, { mode: "stand", expr: t > W.metra - L ? "shock" : "neutral", prop: "tape", blink: lidAt(t, 90) }));
       blob(out, top[0] + 0.5, 0, 1.4);
@@ -380,9 +380,9 @@ export const stage = (id: number, t: number, ts: TowerState, cam: CamInfo): Stag
     }
     case 15: case 16: { // tourists
       const spots: [number, number, Prop][] = id === 15
-        ? [[9.0, 21.0, "camera"], [10.6, 23.2, null], [7.6, 18.6, "icecream"], [11.6, 25.8, "camera"], [8.4, 24.6, null], [12.6, 20.2, "camera"]]
+        ? [[10.4, 27.4, "camera"], [12.3, 28.6, null], [9.4, 25.0, "icecream"], [12.0, 26.0, "camera"], [10.0, 29.6, null], [8.6, 27.8, "camera"]]
         : t < W.ochen - 0.2 ? [[4.6, 19.6, "camera"], [2.6, 18.2, null], [5.8, 17.4, "camera"]]
-        : [[-3.4, 25.6, "camera"], [-1.4, 23.4, null], [-4.9, 22.4, "icecream"], [0.4, 21.4, "camera"], [-2.6, 20.4, null], [-5.6, 26.8, "camera"]];
+        : [[-4.0, 28.4, "camera"], [-2.4, 27.0, null], [-5.6, 26.6, "icecream"], [-1.4, 29.4, "camera"], [-3.4, 25.0, null], [-5.9, 29.6, "camera"]];
       spots.forEach(([x, z, pr], i) => {
         const o = TOURIST[i % TOURIST.length], kid = o.build === "kid";
         
@@ -392,7 +392,7 @@ export const stage = (id: number, t: number, ts: TowerState, cam: CamInfo): Stag
       });
       if (id === 16) { // the tourist holding the tower up, still holding at the end
         const tired = t > W.ochen - L;
-        const [hx, hz] = tired ? [-2.2, 24.8] : [3.0, 24.4];
+        const [hx, hz] = tired ? [-5.0, 30.6] : [3.0, 24.4];
         out.places.push(person(cam, 110, TOURIST[0], hx, 0, hz, { mode: "stand", expr: tired ? "nervous" : "grin", prop: "holdup", blink: lidAt(t, 110) }));
         blob(out, hx, 0, hz);
         if (tired) { const u = q((t * 0.8) % 1, 20); out.fx.push({ key: "sweat", cw: 200, ch: 200, draw: sweat, x: hx - 0.25, y: 1.95 - 0.2 * u, z: hz + 0.1, w: 0.08, h: 0.09 }); }
