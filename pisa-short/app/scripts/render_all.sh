@@ -10,7 +10,7 @@ for ((a=0; a<TOTAL; a+=STEP)); do
   f=out/chunks/c_$(printf %04d $a).mp4
   [ -s "$f" ] && continue
   echo "chunk $a-$b start $(date +%T)"
-  npx remotion render src/index.ts PisaShort "$f.tmp.mp4" --frames=$a-$b --scale=1 --concurrency=1 --codec=h264 --crf=16 --props="$P" $B >/dev/null 2>&1 && mv "$f.tmp.mp4" "$f" || { echo "chunk $a failed"; exit 1; }
+  npx remotion render src/index.ts PisaShort "$f.tmp.mp4" --frames=$a-$b --scale=1 --concurrency=1 --codec=h264 --crf=16 --props="$P" $B > out/chunks/log_$a.txt 2>&1 && mv "$f.tmp.mp4" "$f" || { echo "chunk $a failed"; exit 1; }
   echo "chunk $a-$b done $(date +%T)"
 done
 ls out/chunks/c_*.mp4 | sed "s/^/file '..\//; s/$/'/" | sed "s|file '../out/chunks/|file '|" > out/chunks/list.txt
