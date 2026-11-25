@@ -18,8 +18,9 @@ const mat = (col: string) => {
 };
 const faces = new Map<string, THREE.Material>();
 /** painted face for a skin, expression and eyelid (0 open .. 1 shut) */
-const faceMat = (skin: string, expr: Expr, lid: number, moustache?: string) => {
-  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}`;
+const faceMat = (skin: string, expr: Expr, lid: number, moustache?: string, look = 0) => {
+  const lk = Math.round(Math.max(-1, Math.min(1, look)) * 2) / 2; // pupils: -1 left .. 1 right, half steps
+  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}|${lk}`;
   let m = faces.get(key);
   if (m) return m;
   const cv = document.createElement("canvas"); cv.width = cv.height = 256;
@@ -31,8 +32,12 @@ const faceMat = (skin: string, expr: Expr, lid: number, moustache?: string) => {
     if (shut || expr === "laugh" || expr === "relief") { g.lineWidth = 9; g.beginPath(); g.arc(x, expr === "laugh" ? 112 : 104, 16, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); return; }
     if (expr === "shock") { g.fillStyle = "#ffffff"; g.beginPath(); g.ellipse(x, 100, 22, 26, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke(); g.fillStyle = INK; g.beginPath(); g.arc(x, 102, 9, 0, 7); g.fill(); return; }
     if (expr === "grin" || expr === "relief_open") { g.lineWidth = 9; g.beginPath(); g.arc(x, 108, 15, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); return; }
-    g.beginPath(); g.ellipse(x, 100, 11, half ? 6 : 15, 0, 0, 7); g.fill();
-    g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x + 4, 94, 4, 0, 7); g.fill(); g.fillStyle = INK;
+    const wide = expr === "nervous";
+    if (wide) { g.fillStyle = "#ffffff"; g.beginPath(); g.ellipse(x, 100, 17, 21, 0, 0, 7); g.fill(); g.lineWidth = 5; g.stroke(); g.fillStyle = INK; }
+    const px = x + lk * (wide ? 7 : 5);
+    g.beginPath(); g.ellipse(px, 100, wide ? 8 : 11, half ? 6 : wide ? 10 : 15, 0, 0, 7); g.fill();
+    g.fillStyle = "#ffffff"; g.beginPath(); g.arc(px + 4, 94, 4, 0, 7); g.fill(); g.fillStyle = INK;
+    if (half) { g.fillStyle = skin; g.fillRect(x - 20, 76, 40, 18); g.fillStyle = INK; g.lineWidth = 6; g.beginPath(); g.moveTo(x - 16, 94); g.lineTo(x + 16, 94); g.stroke(); }
   };
   eye(88); eye(168);
   // brows
@@ -119,7 +124,7 @@ export class Blocky {
     p.legL.material = p.legR.material = mat(o.pants); p.shoeL.material = p.shoeR.material = mat(o.boots);
     p.head.material = mat(skin);
     const expr = (s?.expr ?? f.expr ?? "neutral") as Expr, blink = Number(s?.blink ?? f.blink ?? 0);
-    p.face.material = faceMat(skin, expr, blink, o.moustache);
+    p.face.material = faceMat(skin, expr, blink, o.moustache, Number(f.look ?? 0));
     const hat = o.hat ?? null;
     p.hair.visible = hat === "hair" || hat === "cap" || hat === "helmet"; p.hair.material = mat(o.hair ?? "#3a2a1e");
     p.hairBack.visible = hat === "hair" && !!o.dress; p.hairBack.material = mat(o.hair ?? "#3a2a1e");

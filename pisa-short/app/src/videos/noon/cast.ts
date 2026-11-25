@@ -190,14 +190,21 @@ const floatFx = (kind: number) => (p: Pen) => {
 };
 const rays = (p: Pen, t: number) => { for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, r0 = 60 + 40 * t; p.stroke([[150 + Math.cos(a) * r0, 150 + Math.sin(a) * r0], [150 + Math.cos(a) * (r0 + 50), 150 + Math.sin(a) * (r0 + 50)]], 10, "#fff3b0"); } };
 
+// ---------------- living faces ----------------
+/** an expression that changes every 1.5-3 s within a mood (so faces never freeze), and an occasional glance */
+const mood = (t: number, i: number, set: Expr[]): Expr => set[Math.floor((t + hh(i, 7) * 3) / (1.5 + hh(i, 8) * 1.5)) % set.length];
+const glance = (t: number, i: number) => { const k = Math.floor((t + hh(i, 9) * 4) / (1.2 + hh(i, 10) * 1.8)); return [0, 0, -1, 0, 1, 0.5, -0.5][(k + i) % 7]; };
+const HAPPY: Expr[] = ["smile", "grin", "laugh", "smile_closed", "grin"], CALM: Expr[] = ["smile", "neutral", "smile_closed", "smile"], SCARED: Expr[] = ["shock", "nervous", "shock", "nervous"];
+
 // ---------------- helpers ----------------
+let TNOW = 0;
 const stand = (cam: CamInfo, out: Stage, i: number, o: Outfit, x: number, z: number, fo: FrontOpts, sc = 1, y = 0, shadow = true) => {
-  out.places.push(person(cam, i, o, x, y, z, { mode: "stand", blink: lidAt(0, i), ...fo }, sc));
+  out.places.push(person(cam, i, o, x, y, z, { mode: "stand", blink: lidAt(TNOW, i), look: glance(TNOW, i), ...fo }, sc));
   if (shadow && y < 0.3) blob(out, x, 0, z, sc);
 };
 /** someone floating: arms up, legs splayed (the "fall" pose), bobbing and turning slowly */
 const floater = (cam: CamInfo, out: Stage, i: number, o: Outfit, x: number, y: number, z: number, t: number, expr: Expr, sc = 1, tiltAmp = 18) => {
-  out.places.push({ ...person(cam, i, o, x, y + 0.08 * Math.sin(t * 1.6 + i), z, { mode: "fall", expr, blink: lidAt(t, i), tilt: q(tiltAmp * Math.sin(t * 0.7 + i), 4) }, sc) });
+  out.places.push({ ...person(cam, i, o, x, y + 0.08 * Math.sin(t * 1.6 + i), z, { mode: "fall", expr, blink: lidAt(t, i), look: glance(t, i), tilt: q(tiltAmp * Math.sin(t * 0.7 + i), 4) }, sc) });
 };
 const rope = (out: Stage, a: V3, b: V3) => out.ropes.push([a, b]);
 const drifting = (out: Stage, t: number, cx: number, cz: number, n: number, y0 = 1, spread = 10) => {
@@ -210,8 +217,8 @@ const tiedTown = (cam: CamInfo, out: Stage, t: number, noon: boolean, base = 300
   const spots: [number, number][] = [[-7, 2], [-4.5, -3], [6.5, 1], [9, -4], [-9.5, -6], [2, -6.5]];
   spots.forEach(([x, z], i) => {
     const y = noon ? 1.2 + 0.25 * Math.sin(t * 1.3 + i) : 0;
-    if (noon) floater(cam, out, base + i, FOLK[i % 5], x, y, z, t, (["neutral", "smile_closed", "stern", "neutral", "smile"] as Expr[])[i % 5], 1, 8);
-    else stand(cam, out, base + i, FOLK[i % 5], x, z, { expr: (["smile", "neutral", "smile_closed", "neutral", "grin"] as Expr[])[i % 5], blink: lidAt(t, base + i) });
+    if (noon) floater(cam, out, base + i, FOLK[i % 5], x, y, z, t, mood(t, base + i, CALM), 1, 8);
+    else stand(cam, out, base + i, FOLK[i % 5], x, z, { expr: mood(t, base + i, CALM) });
     rope(out, [x + 0.5, 0.02, z + 0.4], [x + 0.05, y + 1.05, z]);
   });
 };
@@ -222,6 +229,7 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
   LNAME = SHOTS[id - 1].light;
   SUN = cam.sun.clone().normalize();
   const L = LEAD, noon = SHOTS[id - 1].noon, pip = pipAt(t), sis = sisAt(t);
+  TNOW = t;
   const girl = (expr: Expr, fo: Partial<FrontOpts> = {}) => stand(cam, out, 1, MILA, sis[0], sis[2], { expr, blink: lidAt(t, 1), ...fo }, 0.82, sis[1]);
   const boy = (expr: Expr, fo: Partial<FrontOpts> = {}) => stand(cam, out, 2, PIP, pip[0], pip[2], { expr, blink: lidAt(t, 2), ...fo }, 0.64, pip[1]);
   switch (id) {
@@ -248,34 +256,38 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
     case 7: { // kids float like balloons on their ropes
       KIDS.concat(KIDS).forEach((o, i) => {
         const x = -2.6 + i * 1.0, z = 2 - (i % 2) * 1.6, y = 2.6 + 0.8 * Math.sin(t * 0.9 + i) + (i % 3) * 0.7;
-        floater(cam, out, 70 + i, o, x, y, z, t, (["laugh", "grin", "laugh"] as Expr[])[i % 3], 0.7, 25);
+        floater(cam, out, 70 + i, o, x, y, z, t, mood(t, 70 + i, HAPPY), 0.7, 25);
         rope(out, [x + 0.3 * Math.sin(i), 0.02, z + 0.5], [x, y + 0.8, z]);
       });
       drifting(out, t, 0, 0, 6);
       break;
     }
-    case 8: girl(t > W.heights - L ? "nervous" : "neutral"); boy("grin"); break;
+    case 8: girl(t > W.heights - L ? "nervous" : "neutral", { look: t > W.heights - L ? 0 : -1 }); boy(mood(t, 2, HAPPY)); break;
     case 9: { // hugging the lamp, eyes shut, her rope tied to it; folk float behind
       girl(t > W.lamppost - L ? "neutral" : "nervous", { blink: t > W.lamppost - L ? 1 : lidAt(t, 1), prop: "hug" });
       rope(out, [LAMP[0], 0.7, LAMP[2]], [sis[0] + 0.1, sis[1] + 0.5, sis[2]]);
-      boy("laugh", { wave: q(Math.sin(t * 8), 20) }); rope(out, [LAMP[0] - 1.0, 0.02, LAMP[2] + 1.0], [pip[0], pip[1] + 0.7, pip[2]]);
+      boy(mood(t, 2, ["laugh", "grin"]), { wave: q(Math.sin(t * 8), 20) }); rope(out, [LAMP[0] - 1.0, 0.02, LAMP[2] + 1.0], [pip[0], pip[1] + 0.7, pip[2]]);
       tiedTown(cam, out, t, true, 320); drifting(out, t, LAMP[0], LAMP[2] - 6, 8);
       break;
     }
     case 10: { // Pip, his rope left on the ground
-      boy(t > W.rope - L ? "grin" : "smile"); girl("smile");
+      boy(t > W.rope - L ? "grin" : "smile", { look: t > W.rope - L ? 1 : 0 }); girl(t > W.rope + 0.3 ? "shock" : "smile", { look: t > W.rope + 0.3 ? -1 : 0 });
       out.fx.push({ key: "ropeground", cw: 300, ch: 120, draw: (p) => p.stroke([[20, 60], [80, 30], [140, 80], [200, 40], [280, 70]], 14, "#c9a46a"), x: pip[0] + 0.6, y: 0.03, z: pip[2] + 0.5, w: 1.0, h: 0.4, flat: true });
       break;
     }
-    case 11: boy(t > W.rising - L ? "shock" : "grin"); if (t < W.roofs) { girl("shock"); rope(out, [LAMP[0], 0.7, LAMP[2]], [sis[0] + 0.1, sis[1] + 0.5, sis[2]]); } drifting(out, t, 0, -4, 8, 2); break;
-    case 12: tiedTown(cam, out, t, true, 340); out.places.forEach((p) => { p.key = p.key.replace(/"expr":"[a-z_]+"/, '"expr":"shock"'); }); boy("nervous"); break;
-    case 13: boy("nervous"); break;
+    case 11: boy(t < W.rising - L ? "grin" : t < W.roofs - L ? "shock" : mood(t, 2, SCARED)); if (t < W.roofs) { girl("shock"); rope(out, [LAMP[0], 0.7, LAMP[2]], [sis[0] + 0.1, sis[1] + 0.5, sis[2]]); } drifting(out, t, 0, -4, 8, 2); break;
+    case 12: {
+      tiedTown(cam, out, t, true, 340);
+      out.places.forEach((p, i) => { const e = mood(t, 340 + i, SCARED); p.key = p.key.replace(/"expr":"[a-z_]+"/, `"expr":"${e}"`); if (p.rig?.front) p.rig = { ...p.rig, front: { ...p.rig.front, expr: e, look: 0 } }; });
+      boy(mood(t, 2, ["nervous", "shock"])); break;
+    }
+    case 13: boy(mood(t, 2, ["nervous", "shock", "nervous"]), { look: t > W.fall - L ? 0 : 1 }); break;
     case 14: girl(t > W.scariest - L ? "stern" : "nervous", { prop: "hug" }); break;
-    case 15: girl(t > W.letgo + 0.2 ? "shock" : "stern"); break;
-    case 16: floater(cam, out, 1, MILA, sis[0], sis[1], sis[2], t, t > W.fish - L ? "grin" : "stern", 0.82, 30); boy("nervous"); break;
+    case 15: girl(t < W.letgo + 0.2 ? "stern" : t < W.lamppost2 + 0.4 ? "shock" : "nervous"); break;
+    case 16: floater(cam, out, 1, MILA, sis[0], sis[1], sis[2], t, t < W.chimney - L ? "nervous" : t < W.fish - L ? "stern" : "grin", 0.82, 30); boy("nervous"); break;
     case 17: floater(cam, out, 1, MILA, sis[0], sis[1], sis[2], t, t > W.sneaker - L ? "grin" : "stern", 0.82, 10); boy(t > W.sneaker - L ? "relief_open" : "nervous"); break;
     case 18: case 19: {
-      floater(cam, out, 1, MILA, sis[0], sis[1], sis[2], t, id === 19 ? "nervous" : "stern", 0.82, 6); boy("nervous");
+      floater(cam, out, 1, MILA, sis[0], sis[1], sis[2], t, id === 19 ? (t > W.one - L ? "shock" : "nervous") : t > W.vane ? "grin" : "stern", 0.82, 6); boy(id === 19 ? "shock" : "nervous");
       const th = clamp01((t - (W.vane - 0.8)) / 0.8), tip: V3 = [sis[0] + (VANE[0] - sis[0]) * th, sis[1] + 1 + (VANE[1] + 0.2 - sis[1] - 1) * th, sis[2] + (VANE[2] - sis[2]) * th];
       if (t > W.vane - 0.8) rope(out, [sis[0], sis[1] + 1.0, sis[2]], tip);
       break;
@@ -288,7 +300,7 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
     }
     case 22: case 23: { // the holiday: everyone lets go
       const spots: [number, number][] = [[-6, 2], [-3, -3], [5, 1], [8, -4], [-8, -5], [2, -7], [0, 4], [-2, 7]];
-      spots.forEach(([x, z], i) => floater(cam, out, 400 + i, i % 3 === 2 ? KIDS[i % 3] : FOLK[i % 5], x, 2.5 + 1.5 * Math.sin(t * 0.8 + i) + (i % 3), z, t, (["laugh", "grin", "laugh", "smile"] as Expr[])[i % 4], i % 3 === 2 ? 0.7 : 1, 30));
+      spots.forEach(([x, z], i) => floater(cam, out, 400 + i, i % 3 === 2 ? KIDS[i % 3] : FOLK[i % 5], x, 2.5 + 1.5 * Math.sin(t * 0.8 + i) + (i % 3), z, t, mood(t, 400 + i, HAPPY), i % 3 === 2 ? 0.7 : 1, 30));
       const by = 3.2 + 0.3 * Math.sin(t);
       floater(cam, out, 1, MILA, 0.3, by, 6, t, id === 23 && t > W.heights2 - L && t < W.brother - L ? "nervous" : "smile", 0.82, 6);
       floater(cam, out, 2, PIP, 1.0, by + 0.2, 6, t, "laugh", 0.64, 10);
