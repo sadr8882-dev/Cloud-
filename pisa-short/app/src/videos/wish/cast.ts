@@ -245,7 +245,7 @@ const p1 = (id: number, t: number, d: DogState) => {
       if (t > 6.2) {
         put(70, KIDS[0], KID1, 0.7, t > W.comes ? "laugh" : "smile", { wave: t > W.comes ? q(Math.sin(t * 6), 10) : undefined });
         if (t > W.comes) { const k = smooth((t - W.comes) / 0.3); fx("balloons", 256, 420, X.balloons, [KID1[0] + 0.45, 1.25 + 0.5 * k, KID1[2] - 0.2], 0.7 * k + 0.01, 1.15 * k + 0.01); }
-        if (t > W.take) { const k = 1 + 0.6 * (1 - smooth((t - W.take) / 0.12)); fx("stamp", 512, 220, X.stamp, [KID1[0] - 0.1, 0.55, KID1[2] + 0.6], 1.2 * k, 0.52 * k); }
+        if (t > W.take) { const k = 1 + 0.6 * (1 - smooth((t - W.take) / 0.12)); fx("stamp", 512, 220, X.stamp, [KID1[0] + 0.05, 0.95, KID1[2] + 0.6], 1.15 * k, 0.5 * k); }
         put(71, FOLK[1], [KID1[0] - 1.4, 0, KID1[2] - 1.6], 1, t > W.comes ? "shock" : CALM);
       }
       break;
