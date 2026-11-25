@@ -111,7 +111,7 @@ const light2D = (cam: CamInfo, mirror: boolean) => {
 
 // ---------------- outfits ----------------
 const SK = ["#f6c99f", "#efb98c", "#d9a074", "#a8704a"]; void SKINS;
-const MILA: Outfit = { jacket: "#f3d35a", pants: "#3b5b9a", boots: "#d23b3b", hat: "hair", hair: "#3a241a", dress: "#f3d35a", build: "kid", skin: SK[0] };
+const MILA: Outfit = { jacket: "#d2323c", pants: "#3b5b9a", boots: "#f4f1ea", hat: "hair", hair: "#4a2c1a", build: "kid", skin: SK[0] }; // the hero: a boy in a red plaid shirt
 const PIP: Outfit = { jacket: "#4cb050", pants: "#3b5b9a", boots: "#e2453c", hat: "cap", cap: "#2f6fd8", build: "kid", skin: SK[0] };
 const FOLK: Outfit[] = [
   { jacket: "#3f6fb5", pants: "#3b3f52", boots: "#4a3426", hat: "hair", hair: "#5a3b2a", skin: SK[0] },
