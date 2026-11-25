@@ -1,0 +1,91 @@
+1
+00:00:00,000 --> 00:00:05,000
+The first airplane flight was shorter than the wings of a jumbo jet.
+
+2
+00:00:05,000 --> 00:00:09,000
+It's 1903, two brothers from Ohio fix bicycles.
+
+3
+00:00:09,000 --> 00:00:12,000
+They dream of building a flying machine.
+
+4
+00:00:12,000 --> 00:00:15,000
+Everyone says it's impossible.
+
+5
+00:00:15,000 --> 00:00:18,000
+One famous inventor's plane falls into a river.
+
+6
+00:00:18,000 --> 00:00:22,000
+So the brothers build a wind tunnel, a box with a fan,
+
+7
+00:00:22,000 --> 00:00:25,000
+and test over 200 tiny wings.
+
+8
+00:00:25,000 --> 00:00:26,000
+Here's the secret.
+
+9
+00:00:26,000 --> 00:00:29,000
+Stick your hand out of a car window and tilt it up.
+
+10
+00:00:29,000 --> 00:00:32,000
+The air pushes it up. That push is called lift.
+
+11
+00:00:32,000 --> 00:00:35,000
+A wing works the same way, just much bigger.
+
+12
+00:00:35,000 --> 00:00:39,000
+In December, they take their plane to a windy beach.
+
+13
+00:00:39,000 --> 00:00:42,000
+They flip a coin to see who flies first.
+
+14
+00:00:42,000 --> 00:00:46,000
+Wilbur wins and three seconds later crashes into the sand.
+
+15
+00:00:46,000 --> 00:00:49,000
+Three days later, it's Orville's turn.
+
+16
+00:00:49,000 --> 00:00:53,000
+He lies on the wing, the engine roars, and the plane lifts off.
+
+17
+00:00:53,000 --> 00:00:56,000
+12 seconds, 37 meters.
+
+18
+00:00:56,000 --> 00:00:59,000
+Luckily, that was enough to change the world.
+
+19
+00:00:59,000 --> 00:01:03,000
+And luckily, a gust of wind flipped the plane that same day.
+
+20
+00:01:03,000 --> 00:01:05,000
+It never flew again.
+
+21
+00:01:05,000 --> 00:01:09,000
+Today, a jumbo jet's wings are longer than that whole flight.
+
+22
+00:01:09,000 --> 00:01:12,000
+And Wilbur, he made the longest flight that day.
+
+23
+00:01:12,000 --> 00:01:16,000
+59 seconds, not bad for the brother who crashed first.
