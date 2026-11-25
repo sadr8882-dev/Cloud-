@@ -60,9 +60,9 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
     bloom: makeBloom(),
     tone: new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }),
     sat: new HueSaturationEffect({ saturation: 0.26 }),
-    con: new BrightnessContrastEffect({ brightness: 0.05, contrast: 0.08 }),
-    vig: new VignetteEffect({ offset: 0.45, darkness: 0.22 }),
-    ao: (() => { const p = new N8AOPostPass(scene, camera, 540, 960); p.configuration.aoRadius = 1.6; p.configuration.distanceFalloff = 1.0; p.configuration.intensity = 2.2; p.configuration.halfRes = true; p.configuration.denoiseSamples = 4; p.configuration.aoSamples = 10; p.configuration.gammaCorrection = false; return p; })(),
+    con: new BrightnessContrastEffect({ brightness: 0.1, contrast: 0.06 }),
+    vig: new VignetteEffect({ offset: 0.6, darkness: 0.1 }),
+    ao: (() => { const p = new N8AOPostPass(scene, camera, 540, 960); p.configuration.aoRadius = 1.6; p.configuration.distanceFalloff = 1.0; p.configuration.intensity = 1.3; p.configuration.halfRes = true; p.configuration.denoiseSamples = 4; p.configuration.aoSamples = 10; p.configuration.gammaCorrection = false; return p; })(),
     grade: new GradeEffect(GRADES.day, GRADE_STRENGTH.day),
     grain: new GrainEffect({ amount: 0.025, cellPx: 1.5 }), // film grain, OFF by default (inputProps post.grain): the reference measures no grain and it quadruples the file size
   }), [camera, scene]);

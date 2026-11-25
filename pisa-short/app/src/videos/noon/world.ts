@@ -232,8 +232,8 @@ export class World {
     const focus = V(...c.look), dist = cam.position.distanceTo(focus);
     cam.layers.enable(NOINK);
     const K = LOOK[s.light], sunDir = this.shotSun(id, s, L);
-    this.hemi.color.set(s.light === "golden" ? "#ffc8a0" : "#9cc4ff"); this.hemi.groundColor.set("#6a8a4a"); this.hemi.intensity = 1.45;
-    this.sun.color.set(s.light === "golden" ? "#ffa860" : "#ffe6c0"); this.sun.intensity = s.light === "golden" ? 4.2 : 4.0; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
+    this.hemi.color.set(s.light === "golden" ? "#ffc8a0" : "#9cc4ff"); this.hemi.groundColor.set("#6a8a4a"); this.hemi.intensity = 2.1;
+    this.sun.color.set(s.light === "golden" ? "#ffa860" : "#ffe6c0"); this.sun.intensity = s.light === "golden" ? 4.8 : 4.7; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
     let Rr = THREE.MathUtils.clamp(dist * 1.15 + 7, 12, 95);
     if (s.light === "golden") Rr = Math.max(Rr, 30);
     if (dist > 40) Rr = Math.max(Rr, 80);
