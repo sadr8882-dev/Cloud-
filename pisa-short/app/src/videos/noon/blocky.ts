@@ -7,7 +7,7 @@ import type { Outfit, Expr, FrontOpts, SideOpts } from "./toon";
 import { twoTone } from "./shade";
 
 // metres for a 1.9 m adult (scaled by the place's scale)
-const LEG = { w: 0.3, h: 0.78, d: 0.3 }, TOR = { w: 0.64, h: 0.66, d: 0.32 }, ARM = { w: 0.28, h: 0.64, d: 0.28 }, HEAD = 0.5;
+const LEG = { w: 0.34, h: 0.7, d: 0.34 }, TOR = { w: 0.7, h: 0.7, d: 0.36 }, ARM = { w: 0.34, h: 0.7, d: 0.34 }, HEAD = 0.56;
 const HIP_Y = LEG.h, SH_Y = LEG.h + TOR.h - 0.06, NECK_Y = LEG.h + TOR.h;
 
 const mats = new Map<string, THREE.Material>();
@@ -15,6 +15,24 @@ const mat = (col: string) => {
   let m = mats.get(col);
   if (!m) { m = twoTone(new THREE.MeshLambertMaterial({ color: col })); mats.set(col, m); }
   return m;
+};
+const cloth = new Map<string, THREE.Material>();
+/** clothing: plaid shirt, striped tee, tank top over a white tee, plain tee, or denim, picked from the colour */
+const clothMat = (col: string, kind: "shirt" | "pants") => {
+  const h = parseInt(col.slice(1), 16), style = kind === "pants" ? (h % 3 === 0 ? "plain" : "denim") : ["plaid", "stripe", "tank", "plain", "plaid"][h % 5];
+  const key = col + kind + style;
+  let m = cloth.get(key);
+  if (m) return m;
+  const cv = document.createElement("canvas"); cv.width = cv.height = 256; const g = cv.getContext("2d")!;
+  const c = new THREE.Color(col), dark = "#" + c.clone().multiplyScalar(0.62).getHexString(), light = "#" + c.clone().lerp(new THREE.Color("#ffffff"), 0.35).getHexString();
+  g.fillStyle = col; g.fillRect(0, 0, 256, 256);
+  if (style === "plaid") { g.globalAlpha = 0.45; g.fillStyle = dark; for (let i = 0; i < 256; i += 64) { g.fillRect(i, 0, 26, 256); g.fillRect(0, i, 256, 26); } g.globalAlpha = 0.35; g.fillStyle = light; for (let i = 32; i < 256; i += 64) { g.fillRect(i, 0, 6, 256); g.fillRect(0, i, 256, 6); } g.globalAlpha = 1; }
+  else if (style === "stripe") { g.fillStyle = light; for (let i = 0; i < 256; i += 40) g.fillRect(0, i, 256, 16); }
+  else if (style === "tank") { g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, 256, 256); g.fillStyle = col; g.beginPath(); g.moveTo(40, 0); g.lineTo(80, 0); g.quadraticCurveTo(128, 70, 176, 0); g.lineTo(216, 0); g.lineTo(230, 256); g.lineTo(26, 256); g.closePath(); g.fill(); }
+  else if (style === "denim") { g.fillStyle = "#3d5a8a"; g.fillRect(0, 0, 256, 256); for (let k = 0; k < 3000; k++) { g.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"; g.fillRect(Math.random() * 256, Math.random() * 256, 2, 5); } g.strokeStyle = "rgba(230,190,120,0.6)"; g.setLineDash([6, 5]); g.lineWidth = 3; g.strokeRect(10, 10, 236, 236); }
+  for (let k = 0; k < 1500; k++) { g.fillStyle = k % 2 ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.04)"; g.fillRect((k * 37) % 256, (k * 91) % 256, 2, 2); }
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  m = twoTone(new THREE.MeshLambertMaterial({ map: tex })); cloth.set(key, m); return m;
 };
 const faces = new Map<string, THREE.Material>();
 /** painted face for a skin, expression and eyelid (0 open .. 1 shut) */
@@ -82,6 +100,7 @@ const GEO = {
   head: box(HEAD, HEAD, HEAD, 0.12).translate(0, HEAD / 2 + 0.04, 0),
   face: new THREE.PlaneGeometry(HEAD * 0.9, HEAD * 0.9).translate(0, HEAD / 2 + 0.04, HEAD / 2 + 0.003),
   hair: box(HEAD + 0.06, HEAD * 0.32, HEAD + 0.06, 0.08).translate(0, HEAD + 0.02, -0.01),
+  spike: new THREE.ConeGeometry(0.11, 0.26, 5),
   hairBack: box(HEAD + 0.06, HEAD * 0.7, 0.12, 0.05).translate(0, HEAD * 0.62, -HEAD / 2 - 0.02),
   cap: box(HEAD + 0.05, HEAD * 0.26, HEAD + 0.05, 0.08).translate(0, HEAD + 0.06, 0),
   brim: box(HEAD * 0.9, 0.05, HEAD * 0.45, 0.02).translate(0, HEAD - 0.04, HEAD * 0.55),
@@ -109,6 +128,7 @@ export class Blocky {
     const tor = new THREE.Group(); tor.position.y = HIP_Y; this.body.add(tor);
     P("torso", GEO.torso, tor); P("skirt", GEO.skirt, tor);
     P("head", GEO.head, this.head); P("face", GEO.face, this.head); P("hair", GEO.hair, this.head); P("hairBack", GEO.hairBack, this.head);
+    for (let i = 0; i < 7; i++) { const sp = P("spike" + i, GEO.spike, this.head); const a = (i / 7) * Math.PI * 2; sp.position.set(Math.sin(a) * 0.16, HEAD + 0.2 + (i % 2) * 0.04, Math.cos(a) * 0.14 - 0.02); sp.rotation.set(Math.cos(a) * 0.6 - 0.2, 0, -Math.sin(a) * 0.6); }
     P("cap", GEO.cap, this.head); P("brim", GEO.brim, this.head); P("bonnet", GEO.bonnet, this.head); P("beard", GEO.beard, this.head);
     this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
     this.root.add(this.body);
@@ -119,9 +139,10 @@ export class Blocky {
   set(r: RigOpts, t: number) {
     const o = r.o, f = r.front ?? {}, s = r.side;
     const skin = o.skin ?? "#ffe2c2", p = this.parts;
-    p.torso.material = mat(o.jacket); p.skirt.visible = !!o.dress; p.skirt.material = mat(o.dress ?? o.jacket);
-    p.armL.material = p.armR.material = mat(o.jacket);
-    p.legL.material = p.legR.material = mat(o.pants); p.shoeL.material = p.shoeR.material = mat(o.boots);
+    const shirt = o.dress ? mat(o.jacket) : clothMat(o.jacket, "shirt");
+    p.torso.material = shirt; p.skirt.visible = !!o.dress; p.skirt.material = mat(o.dress ?? o.jacket);
+    p.armL.material = p.armR.material = o.dress ? mat(skin) : clothMat(o.jacket, "shirt");
+    p.legL.material = p.legR.material = o.dress ? mat(skin) : clothMat(o.pants, "pants"); p.shoeL.material = p.shoeR.material = mat(o.boots);
     p.head.material = mat(skin);
     const expr = (s?.expr ?? f.expr ?? "neutral") as Expr, blink = Number(s?.blink ?? f.blink ?? 0);
     p.face.material = faceMat(skin, expr, blink, o.moustache, Number(f.look ?? 0));
@@ -130,6 +151,8 @@ export class Blocky {
     p.hairBack.visible = hat === "hair" && !!o.dress; p.hairBack.material = mat(o.hair ?? "#3a2a1e");
     p.cap.visible = p.brim.visible = hat === "cap" || hat === "helmet"; p.cap.material = p.brim.material = mat(o.cap ?? "#3f6fb5");
     if (hat === "cap") p.hair.visible = false;
+    const spiky = hat === "hair" && !o.dress;
+    for (let i = 0; i < 7; i++) { p["spike" + i].visible = spiky; p["spike" + i].material = mat(o.hair ?? "#3a2a1e"); }
     p.bonnet.visible = hat === "bonnet"; p.bonnet.material = mat("#e9cf8f");
     p.beard.visible = !!o.beard; p.beard.material = mat(o.beard ?? "#ffffff");
     // ---- pose ----

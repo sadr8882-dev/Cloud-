@@ -19,6 +19,7 @@ const discTex = () => ctex("sunDisc", 128, 128, (g) => {
   g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
 });
 const SUN_SHOT: Record<number, { az?: number; el?: number }> = {
+  1: { el: 30 }, 3: { el: 30 }, 7: { el: 32 }, 11: { el: 32 }, 12: { el: 30 }, 16: { el: 32 },
   2: { az: 140 }, 4: { az: 130 }, 5: { az: 130 }, 6: { az: 130 }, 8: { az: 135 }, 9: { az: 130 }, 10: { az: 130 }, 13: { az: 140 },
   14: { az: 135 }, 17: { az: 125 }, 19: { az: 135 }, 21: { az: 130 }, 22: { az: 120, el: 14 }, 23: { az: 125, el: 14 },
 };
@@ -104,7 +105,7 @@ export class World {
     const cob = lam("nPaving", () => ({ map: pavingReal() }));
     const stone = lam("nStoneR", () => ({ map: brickReal(), color: "#e6d7c4" })), roofT = lam("nRoof", () => ({ color: "#e2453c", side: THREE.DoubleSide }));
     // realistic-ish suburban palette: painted siding in soft colours, brick, dark shingle roofs
-    const BRICKS = ["#e9e4d6", "#a9c4d6", "#d6c39a", "#brick", "#c9d6b4", "#f2f0ea", "#brick", "#d9b8a0"];
+    const BRICKS = ["#e9e4d6", "#9fc0d8", "#d6c39a", "#brick", "#bcd4a8", "#f2f0ea", "#brick", "#e0b48e"];
     const ROOFS = ["#4a4f5a", "#6b3f35", "#3b3f52", "#5a5048", "#7a4a3a"];
     const wallMat = (i: number) => BRICKS[i % 8] === "#brick" ? lam("nWallB", () => ({ map: brickReal() })) : lam("nWall" + i % 8, () => ({ map: sidingReal(), color: BRICKS[i % 8] }));
     const win = lam("nWin", () => ({ color: "#5ac8f0" })), frame = lam("nFrame", () => ({ color: "#f4f1ea" })), door = lam("nDoor", () => ({ color: "#7a4f33" }));
@@ -136,20 +137,25 @@ export class World {
     const blockTree = (bb: Batch, x: number, z: number, h: number, i: number) => {
       bb.add(new THREE.CylinderGeometry(0.18, 0.32, h * 0.5, 8).translate(x, h * 0.25, z), lam("nBark", () => ({ map: barkReal() })));
       const lc = lam("nLeavesR" + i % 3, () => ({ map: leavesReal(i % 3) }));
-      if (i % 4) for (let k = 0; k < 4; k++) bb.add(new THREE.ConeGeometry(h * (0.3 - k * 0.06), h * 0.34, 10).translate(x, h * (0.32 + k * 0.17), z), lc);
+      if (i % 11) for (let k = 0; k < 4; k++) bb.add(new THREE.ConeGeometry(h * (0.3 - k * 0.06), h * 0.34, 10).translate(x, h * (0.32 + k * 0.17), z), lc);
       else bb.add(new THREE.IcosahedronGeometry(h * 0.33, 1).translate(x, h * 0.62, z), lc);
     };
     const wood = lam("nWood", () => ({ color: "#a8724a" })), iron = twoTone(new THREE.MeshLambertMaterial({ color: "#3b3f52" }));
     const brass = twoTone(new THREE.MeshLambertMaterial({ color: "#c9a23a" }));
     withSight(sightLines(), () => {
       b.add(quadUp(-400, 400, -400, 400, 100, 100, 0), grass);
-      b.add(quadUp(-14, 14, -26, 14, 3.5, 5, 0.015), cob); // the square (grey baseplate, 2 m tiles)
+      // concrete sidewalks across the lawn (no paved square any more)
+      const walk = lam("nWalk", () => ({ color: "#cfcac0" }));
+      for (const [x0, x1, z0, z1] of [[-1.6, 1.6, -15, 30], [-30, 30, 9, 12], [-30, 30, -13, -10.5], [6, 8.2, -12, 12]]) b.add(quadUp(x0, x1, z0, z1, 1, 1, 0.02), walk);
+      void cob;
+      const hill = new THREE.SphereGeometry(1, 32, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+      for (const [hx, hz, sx, sy, sz] of [[-120, -150, 90, 16, 60], [110, -160, 90, 13, 60], [-160, 40, 60, 10, 80], [150, 60, 60, 11, 70]] as const) b.add(hill, grass, new THREE.Matrix4().compose(V(hx, -1, hz), new THREE.Quaternion(), V(sx, sy, sz)));
       // houses around the square (fronts facing it)
       const ring: [number, number, number, number][] = [];
       for (let x = -13; x <= 13; x += 8.6) { ring.push([x, -26, 0, 8]); ring.push([x, 22, Math.PI, 8]); }
       for (let z = -18; z <= 14; z += 8.4) { ring.push([-22, z, Math.PI / 2, 8]); ring.push([22, z, -Math.PI / 2, 8]); }
       ring.forEach(([x, z, yaw, w], i) => { if (Math.abs(x) < 5 && z < 0) return; if (blocked(x - 5, x + 5, 0, 14, z - 5, z + 5)) return; blockHouse(b, x, z, yaw, w, 8, [8, 9, 10, 7][i % 4], i); });
-      for (let i = 0; i < 110; i++) { const a = i * 2.39996, d = 34 + (i % 13) * 7; blockTree(b, Math.cos(a) * d, Math.sin(a) * d, 9 + (i % 5) * 2.2, i); }
+      for (let i = 0; i < 260; i++) { const a = i * 2.39996, d = 30 + (i % 17) * 5; blockTree(b, Math.cos(a) * d, Math.sin(a) * d, 13 + (i % 6) * 2.5, i); }
       // the chimney she kicks off (on a roof east of the tower)
       blockHouse(b, CHIMNEY[0], CHIMNEY[2] - 1.2, -Math.PI / 2, 8, 8, 9, 6);
     });

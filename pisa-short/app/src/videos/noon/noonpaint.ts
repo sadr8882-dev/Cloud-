@@ -20,8 +20,8 @@ const noise = (g: CanvasRenderingContext2D, r: () => number, w: number, h: numbe
   for (let i = 0; i < n; i++) { g.fillStyle = cols[Math.floor(r() * cols.length)]; const s = size[0] + r() * (size[1] - size[0]); g.fillRect(r() * w, r() * h, s, s * (0.6 + r())); }
 };
 export const grassReal = () => ctex("nGrassReal", 1024, 1024, (g, r) => {
-  g.fillStyle = "#3f9a2a"; g.fillRect(0, 0, 1024, 1024);
-  noise(g, r, 1024, 1024, 30000, ["#4caa30", "#358a22", "#5cbc3c", "#2c7a1c", "#6ac848", "#3c9628"], [2, 6]);
+  g.fillStyle = "#3a8426"; g.fillRect(0, 0, 1024, 1024);
+  noise(g, r, 1024, 1024, 30000, ["#46962c", "#2f7420", "#55a636", "#286a1a", "#62b242", "#367f24"], [2, 6]);
   noise(g, r, 1024, 1024, 260, ["#b8642a", "#d08a30", "#8a4a22", "#c8a040"], [5, 11]); // fallen leaves
   for (let i = 0; i < 60; i++) { g.fillStyle = r() < 0.5 ? "rgba(120,170,70,0.10)" : "rgba(30,60,20,0.10)"; g.beginPath(); g.ellipse(r() * 1024, r() * 1024, 60 + r() * 120, 40 + r() * 90, r() * 3, 0, 7); g.fill(); }
 });
