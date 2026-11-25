@@ -13,7 +13,7 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { EffectComposer } from "@react-three/postprocessing";
 import { N8AOPostPass } from "n8ao";
-import { BlendFunction, BloomEffect, ToneMappingEffect, ToneMappingMode } from "postprocessing";
+import { BlendFunction, BloomEffect, ToneMappingEffect, ToneMappingMode, HueSaturationEffect, BrightnessContrastEffect, VignetteEffect } from "postprocessing";
 import { World, loadKit } from "./world";
 import { InkPass, noInkFallback } from "./ink";
 import { LensBlur, GrainEffect } from "./lensblur";
@@ -59,6 +59,9 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
     lens: new LensBlur({ maxCoC: 24, nearScale: 1.2 }),
     bloom: makeBloom(),
     tone: new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }),
+    sat: new HueSaturationEffect({ saturation: 0.26 }),
+    con: new BrightnessContrastEffect({ brightness: 0.05, contrast: 0.08 }),
+    vig: new VignetteEffect({ offset: 0.45, darkness: 0.22 }),
     ao: (() => { const p = new N8AOPostPass(scene, camera, 540, 960); p.configuration.aoRadius = 1.6; p.configuration.distanceFalloff = 1.0; p.configuration.intensity = 2.2; p.configuration.halfRes = true; p.configuration.denoiseSamples = 4; p.configuration.aoSamples = 10; p.configuration.gammaCorrection = false; return p; })(),
     grade: new GradeEffect(GRADES.day, GRADE_STRENGTH.day),
     grain: new GrainEffect({ amount: 0.025, cellPx: 1.5 }), // film grain, OFF by default (inputProps post.grain): the reference measures no grain and it quadruples the file size
@@ -72,6 +75,9 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
       {on.lens ? <primitive object={fx.lens.main} dispose={null} /> : null}
       {on.bloom ? <primitive object={fx.bloom} dispose={null} /> : null}
       <primitive object={fx.tone} dispose={null} />
+      <primitive object={fx.sat} dispose={null} />
+      <primitive object={fx.con} dispose={null} />
+      <primitive object={fx.vig} dispose={null} />
       {on.grade ? <primitive object={fx.grade} dispose={null} /> : null}
       {on.grain ? <primitive object={fx.grain} dispose={null} /> : null}
     </EffectComposer>

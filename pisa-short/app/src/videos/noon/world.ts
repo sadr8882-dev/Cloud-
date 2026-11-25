@@ -232,8 +232,8 @@ export class World {
     const focus = V(...c.look), dist = cam.position.distanceTo(focus);
     cam.layers.enable(NOINK);
     const K = LOOK[s.light], sunDir = this.shotSun(id, s, L);
-    this.hemi.color.set(s.light === "golden" ? "#ffd2a8" : "#cfe4ff"); this.hemi.groundColor.set("#7a8a5a"); this.hemi.intensity = 1.35;
-    this.sun.color.set(s.light === "golden" ? "#ffb070" : "#fff1dc"); this.sun.intensity = s.light === "golden" ? 3.4 : 3.1; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
+    this.hemi.color.set(s.light === "golden" ? "#ffc8a0" : "#9cc4ff"); this.hemi.groundColor.set("#6a8a4a"); this.hemi.intensity = 1.45;
+    this.sun.color.set(s.light === "golden" ? "#ffa860" : "#ffe6c0"); this.sun.intensity = s.light === "golden" ? 4.2 : 4.0; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
     let Rr = THREE.MathUtils.clamp(dist * 1.15 + 7, 12, 95);
     if (s.light === "golden") Rr = Math.max(Rr, 30);
     if (dist > 40) Rr = Math.max(Rr, 80);
@@ -246,11 +246,13 @@ export class World {
     CHAR.uCharTint.value.set(...L.charTint); CHAR.uCharShade.value = L.charShade; CHAR.uGrad.value = L.charGrad;
     CHAR.uBodyGrad.value = L.bodyGrad; CHAR.uSideTint.value.set(...L.sideTint);
     const su = this.skyMat.uniforms;
-    K.sky.c.forEach((h, i) => untone(h, su["c" + i].value));
+    // deep saturated sky (reference: rich blue overhead, pale blue at the horizon); golden: peach to violet
+    const SKY = s.light === "golden" ? ["#ffc488", "#ffa66e", "#f08a72", "#b8709a", "#5a4e9a"] : ["#b4daf6", "#8cc4f0", "#62a8ea", "#3d88e0", "#2a6cd4"];
+    SKY.forEach((h, i) => untone(h, su["c" + i].value));
     const e = K.sky.e.map((dg) => THREE.MathUtils.degToRad(dg));
     su.e.value.set(e[1], e[2], e[3], e[4]);
     this.sky.position.copy(cam.position);
-    untone(L.fog, this.fog.color); this.fog.near = L.fogNear * 1.6; this.fog.far = L.fogFar * 1.5;
+    untone(s.light === "golden" ? "#f6c79a" : "#b4d6f2", this.fog.color); this.fog.near = 70; this.fog.far = 520;
     scene.fog = this.fog; scene.background = null;
     this.sunDisc.visible = s.light === "golden";
     if (this.sunDisc.visible) { this.sunDisc.position.copy(cam.position).addScaledVector(sunDir, 900); this.sunDisc.scale.setScalar(2 * 900 * Math.tan(THREE.MathUtils.degToRad(1.7))); }
