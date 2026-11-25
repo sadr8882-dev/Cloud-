@@ -12,6 +12,7 @@ import { AbsoluteFill, continueRender, delayRender, getInputProps, useCurrentFra
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { EffectComposer } from "@react-three/postprocessing";
+import { N8AOPostPass } from "n8ao";
 import { BlendFunction, BloomEffect, ToneMappingEffect, ToneMappingMode } from "postprocessing";
 import { World, loadKit } from "./world";
 import { InkPass, noInkFallback } from "./ink";
@@ -24,8 +25,8 @@ import { Audio, staticFile } from "remotion";
 export const NOON_FRAMES = TOTAL;
 
 /** A/B switches for test stills only (Remotion inputProps `{ post: { ink: false, ... } }`); everything is on by default. */
-type PostToggles = { ink: boolean; lens: boolean; pre: boolean; bloom: boolean; grade: boolean; grain: boolean; msaa: number; shadow: number };
-const toggles = (): PostToggles => ({ ink: true, lens: true, pre: true, bloom: true, grade: true, grain: false, msaa: 4, shadow: 4096, ...((getInputProps() as { post?: Partial<PostToggles> }).post ?? {}) });
+type PostToggles = { ao: boolean; ink: boolean; lens: boolean; pre: boolean; bloom: boolean; grade: boolean; grain: boolean; msaa: number; shadow: number };
+const toggles = (): PostToggles => ({ ink: false, lens: false, pre: true, bloom: true, grade: false, grain: false, msaa: 4, shadow: 4096, ao: true, ...((getInputProps() as { post?: Partial<PostToggles> }).post ?? {}) });
 
 /** Bloom for emissive sources only (depth.md 6.4). Its MIP chain always starts at 540x960 (half of 1080x1920),
  *  whatever the output size, so the glow keeps the same size relative to the frame (e-fold ~30 px at 1080p,
@@ -57,7 +58,8 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
     ink: new InkPass(scene, camera as THREE.PerspectiveCamera),
     lens: new LensBlur({ maxCoC: 24, nearScale: 1.2 }),
     bloom: makeBloom(),
-    tone: new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL }),
+    tone: new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }),
+    ao: (() => { const p = new N8AOPostPass(scene, camera, 540, 960); p.configuration.aoRadius = 1.6; p.configuration.distanceFalloff = 1.0; p.configuration.intensity = 2.2; p.configuration.halfRes = true; p.configuration.denoiseSamples = 4; p.configuration.aoSamples = 10; p.configuration.gammaCorrection = false; return p; })(),
     grade: new GradeEffect(GRADES.day, GRADE_STRENGTH.day),
     grain: new GrainEffect({ amount: 0.025, cellPx: 1.5 }), // film grain, OFF by default (inputProps post.grain): the reference measures no grain and it quadruples the file size
   }), [camera, scene]);
@@ -65,6 +67,7 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
   const post = useMemo(() => (
     <EffectComposer multisampling={on.msaa}>
       {on.ink ? <primitive object={fx.ink} dispose={null} /> : null}
+      {on.ao ? <primitive object={fx.ao} dispose={null} /> : null}
       {on.lens && on.pre ? <primitive object={fx.lens.pre} dispose={null} /> : null}
       {on.lens ? <primitive object={fx.lens.main} dispose={null} /> : null}
       {on.bloom ? <primitive object={fx.bloom} dispose={null} /> : null}
@@ -75,7 +78,7 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
   ), [fx, on]);
   const cam = camera as THREE.PerspectiveCamera;
   target.copy(world.update(id, f, cam, scene));
-  noInkFallback(world.root);
+  if (on.ink) noInkFallback(world.root);
   // thin-lens focus: distance along the view axis to the shot's focus point (default: the camera's look target)
   const d = dofAt(f);
   cam.getWorldDirection(fwd);
@@ -96,7 +99,7 @@ const Inner: React.FC<{ id: number; kit: Kit }> = ({ id, kit }) => {
 const dprOverride = () => (getInputProps() as { post?: { dpr?: number } }).post?.dpr;
 const ShotView: React.FC<{ id: number; kit: Kit; alpha: number }> = ({ id, kit, alpha }) => (
   <AbsoluteFill style={{ opacity: alpha }}>
-    <ThreeCanvas width={1080} height={1920} {...(dprOverride() ? { dpr: dprOverride() } : {})} shadows gl={{ antialias: false, stencil: false, powerPreference: "high-performance", toneMappingExposure: 1.0 }}
+    <ThreeCanvas width={1080} height={1920} {...(dprOverride() ? { dpr: dprOverride() } : {})} shadows="soft" gl={{ antialias: false, stencil: false, powerPreference: "high-performance", toneMappingExposure: 1.0 }}
       camera={{ fov: 40, near: 0.2, far: 1500 }}>
       <Inner id={id} kit={kit} />
     </ThreeCanvas>

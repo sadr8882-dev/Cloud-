@@ -162,7 +162,8 @@ const toSrgb = (v: number) => { const c = clamp01(v); return c <= 0.0031308 ? 12
 const hexOf = (c: [number, number, number], k: number) => "#" + c.map((v) => Math.round(255 * toSrgb(1 - (1 - v) * k)).toString(16).padStart(2, "0")).join("");
 const CONTACT: Record<"day" | "golden", [number, number, number]> = { day: [0.2, 0.21, 0.33], golden: [0.24, 0.2, 0.33] };
 const TAIL: [number, number, number] = [0.42, 0.44, 0.62];
-const blob = (out: Stage, x: number, y: number, z: number, sc = 1, k = 1) => {
+const NO_BLOB = true as boolean; // real soft shadows now
+const blob = (out: Stage, x: number, y: number, z: number, sc = 1, k = 1) => { if (NO_BLOB) return;
   const hl = Math.hypot(SUN.x, SUN.z) || 1, ox = -SUN.x / hl, oz = -SUN.z / hl, rot = Math.atan2(-ox, -oz);
   if (LNAME === "day") {
     const el = Math.asin(Math.min(0.99, Math.max(0.1, SUN.y)));

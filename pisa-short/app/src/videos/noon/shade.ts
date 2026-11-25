@@ -43,17 +43,15 @@ const TWO_TONE = /* glsl */ `
 `;
 const DECL = "#include <common>\nuniform vec3 uLitCol; uniform vec3 uShadeCol; uniform vec3 uShadeLift; uniform float uLambert; uniform float uSideK; uniform float uTerm; uniform vec3 uBounce; uniform float uSat;";
 
-/** Lambert (or Phong: its specular term is kept, masked by the shadow) -> two-tone. Call once per material. */
-export function twoTone<T extends THREE.MeshLambertMaterial | THREE.MeshPhongMaterial>(m: T, liftK = 1): T {
-  m.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, TONE);
-    sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", DECL + `\n#define LIFT_K ${liftK.toFixed(3)}`)
-      .replace("#include <lights_fragment_begin>", "float sunVis = 1.0;\n" + LFB)
-      .replace("#include <lights_fragment_end>", "#include <lights_fragment_end>\n" + TWO_TONE);
-  };
-  m.customProgramCacheKey = () => "twoTone5_" + liftK.toFixed(3);
-  return m;
+/** "Shader" look for this short: every world/character material becomes a physically based (MeshStandardMaterial)
+ *  surface lit by the sun + sky, with soft shadows and ambient occlusion from the post chain (no toon two-tone). */
+export function twoTone<T extends THREE.MeshLambertMaterial | THREE.MeshPhongMaterial>(m: T, _liftK = 1): T {
+  const isPhong = (m as THREE.MeshPhongMaterial).isMeshPhongMaterial;
+  const s = new THREE.MeshStandardMaterial({
+    color: m.color, map: m.map, side: m.side, alphaTest: m.alphaTest, transparent: m.transparent,
+    roughness: isPhong ? 0.45 : 0.78, metalness: 0.0,
+  });
+  return s as unknown as T;
 }
 
 // ---------------- tone-map inversion ----------------

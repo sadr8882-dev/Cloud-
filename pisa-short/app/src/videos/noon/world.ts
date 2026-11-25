@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { Batch, boxGeo, V, lam, Kit, Ray, withSight, quad, blocked } from "./build";
 import { cloudHD } from "./paint";
-import { clockTex, plateTex } from "./noonpaint";
+import { clockTex, grassReal, pavingReal, sidingReal, brickReal, shingleReal, barkReal, leavesReal } from "./noonpaint";
 import { LIGHTS, LOOK, LightPreset } from "./lights";
 import { TONE, CHAR, twoTone, untone } from "./shade";
 import { NOINK } from "./ink";
@@ -100,18 +100,21 @@ export class World {
 
     const b = new Batch();
     // toy-brick world: flat plastic colours, gridded baseplates, box houses, cube trees
-    const grass = lam("nPlateG", () => ({ map: plateTex("G", "#4cb84a", "#3f9e3e") }));
-    const cob = lam("nPlateS", () => ({ map: plateTex("S", "#a3a7b0", "#8c9099") }));
-    const stone = lam("nStone", () => ({ color: "#e8e1d0" })), roofT = lam("nRoof", () => ({ color: "#e2453c", side: THREE.DoubleSide }));
-    const BRICKS = ["#f2c230", "#3fa0c8", "#e2453c", "#f08a2c", "#7b5ac9", "#f4f1ea", "#6bb04e", "#e886b0"];
-    const ROOFS = ["#2f5fa8", "#e2453c", "#3b3f52", "#2f8a4f", "#c0533a"];
+    const grass = lam("nGrassReal", () => ({ map: grassReal() }));
+    const cob = lam("nPaving", () => ({ map: pavingReal() }));
+    const stone = lam("nStoneR", () => ({ map: brickReal(), color: "#e6d7c4" })), roofT = lam("nRoof", () => ({ color: "#e2453c", side: THREE.DoubleSide }));
+    // realistic-ish suburban palette: painted siding in soft colours, brick, dark shingle roofs
+    const BRICKS = ["#e9e4d6", "#a9c4d6", "#d6c39a", "#brick", "#c9d6b4", "#f2f0ea", "#brick", "#d9b8a0"];
+    const ROOFS = ["#4a4f5a", "#6b3f35", "#3b3f52", "#5a5048", "#7a4a3a"];
+    const wallMat = (i: number) => BRICKS[i % 8] === "#brick" ? lam("nWallB", () => ({ map: brickReal() })) : lam("nWall" + i % 8, () => ({ map: sidingReal(), color: BRICKS[i % 8] }));
     const win = lam("nWin", () => ({ color: "#5ac8f0" })), frame = lam("nFrame", () => ({ color: "#f4f1ea" })), door = lam("nDoor", () => ({ color: "#7a4f33" }));
     /** box house: body, gable roof (two slabs), square windows on the front, a door, a chimney block */
     const blockHouse = (bb: Batch, x: number, z: number, yaw: number, w: number, d: number, h: number, i: number) => {
       const m = new THREE.Matrix4().makeRotationY(yaw).setPosition(x, 0, z);
       const add = (g: THREE.BufferGeometry, mm: THREE.Material) => bb.add(g, mm, m);
-      add(new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0), lam("nB" + i % 8, () => ({ color: BRICKS[i % 8] })));
-      const rm = lam("nR" + i % 5, () => ({ color: ROOFS[i % 5] })), rh = d * 0.45, sl = Math.hypot(d / 2 + 0.4, rh);
+      const bx = new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0); const uv = bx.attributes.uv as THREE.BufferAttribute; for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * w / 4, uv.getY(k) * h / 4);
+      add(bx, wallMat(i));
+      const rm = lam("nR" + i % 5, () => ({ map: shingleReal(), color: ROOFS[i % 5] })), rh = d * 0.45, sl = Math.hypot(d / 2 + 0.4, rh);
       for (const s of [-1, 1]) {
         const slab = new THREE.BoxGeometry(w + 0.6, 0.3, sl); slab.translate(0, 0, s * sl / 2);
         slab.applyMatrix4(new THREE.Matrix4().makeRotationX(s * Math.atan2(rh, d / 2 + 0.4))); slab.translate(0, h + rh, 0);
@@ -119,7 +122,7 @@ export class World {
       }
       const gab = new THREE.BufferGeometry(); // gable triangles
       gab.setAttribute("position", new THREE.Float32BufferAttribute([-w / 2, h, d / 2, -w / 2, h, -d / 2, -w / 2, h + rh, 0, w / 2, h, -d / 2, w / 2, h, d / 2, w / 2, h + rh, 0], 3)); gab.computeVertexNormals();
-      add(gab, lam("nB" + i % 8, () => ({ color: BRICKS[i % 8] })));
+      gab.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 2, 0, 1, 1, 0, 0, 2, 0, 1, 1], 2)); add(gab, wallMat(i));
       const floors = Math.max(1, Math.floor(h / 3)), n = Math.max(1, Math.floor(w / 2.4));
       for (let f = 0; f < floors; f++) for (let k = 0; k < n; k++) {
         const wx = -w / 2 + (k + 0.5) * (w / n), wy = 1.6 + f * 3;
@@ -129,23 +132,24 @@ export class World {
       }
       add(new THREE.BoxGeometry(0.9, 2.2, 0.9).translate(w * 0.25 * (i % 2 ? 1 : -1), h + rh * 0.6 + 0.6, -d * 0.2), lam("nChim", () => ({ color: "#a3a7b0" })));
     };
+    /** pine (most) or round leafy tree, textured bark and needles */
     const blockTree = (bb: Batch, x: number, z: number, h: number, i: number) => {
-      bb.add(new THREE.BoxGeometry(0.8, h * 0.45, 0.8).translate(x, h * 0.225, z), lam("nTrunk", () => ({ color: "#8a5a34" })));
-      const lc = lam("nLeaf" + i % 3, () => ({ color: ["#2f8a4f", "#3fa34a", "#4cb84a"][i % 3] }));
-      bb.add(new THREE.BoxGeometry(h * 0.55, h * 0.4, h * 0.55).translate(x, h * 0.6, z), lc);
-      bb.add(new THREE.BoxGeometry(h * 0.35, h * 0.25, h * 0.35).translate(x, h * 0.88, z), lc);
+      bb.add(new THREE.CylinderGeometry(0.18, 0.32, h * 0.5, 8).translate(x, h * 0.25, z), lam("nBark", () => ({ map: barkReal() })));
+      const lc = lam("nLeavesR" + i % 3, () => ({ map: leavesReal(i % 3) }));
+      if (i % 4) for (let k = 0; k < 4; k++) bb.add(new THREE.ConeGeometry(h * (0.3 - k * 0.06), h * 0.34, 10).translate(x, h * (0.32 + k * 0.17), z), lc);
+      else bb.add(new THREE.IcosahedronGeometry(h * 0.33, 1).translate(x, h * 0.62, z), lc);
     };
     const wood = lam("nWood", () => ({ color: "#a8724a" })), iron = twoTone(new THREE.MeshLambertMaterial({ color: "#3b3f52" }));
     const brass = twoTone(new THREE.MeshLambertMaterial({ color: "#c9a23a" }));
     withSight(sightLines(), () => {
-      b.add(quadUp(-400, 400, -400, 400, 400, 400, 0), grass);
-      b.add(quadUp(-14, 14, -26, 14, 14, 20, 0.015), cob); // the square (grey baseplate, 2 m tiles)
+      b.add(quadUp(-400, 400, -400, 400, 100, 100, 0), grass);
+      b.add(quadUp(-14, 14, -26, 14, 3.5, 5, 0.015), cob); // the square (grey baseplate, 2 m tiles)
       // houses around the square (fronts facing it)
       const ring: [number, number, number, number][] = [];
       for (let x = -13; x <= 13; x += 8.6) { ring.push([x, -26, 0, 8]); ring.push([x, 22, Math.PI, 8]); }
       for (let z = -18; z <= 14; z += 8.4) { ring.push([-22, z, Math.PI / 2, 8]); ring.push([22, z, -Math.PI / 2, 8]); }
       ring.forEach(([x, z, yaw, w], i) => { if (Math.abs(x) < 5 && z < 0) return; if (blocked(x - 5, x + 5, 0, 14, z - 5, z + 5)) return; blockHouse(b, x, z, yaw, w, 8, [8, 9, 10, 7][i % 4], i); });
-      for (let i = 0; i < 40; i++) { const a = i * 2.39996, d = 45 + (i % 9) * 9; blockTree(b, Math.cos(a) * d, Math.sin(a) * d, 7 + (i % 4) * 1.5, i); }
+      for (let i = 0; i < 110; i++) { const a = i * 2.39996, d = 34 + (i % 13) * 7; blockTree(b, Math.cos(a) * d, Math.sin(a) * d, 9 + (i % 5) * 2.2, i); }
       // the chimney she kicks off (on a roof east of the tower)
       blockHouse(b, CHIMNEY[0], CHIMNEY[2] - 1.2, -Math.PI / 2, 8, 8, 9, 6);
     });
@@ -228,8 +232,8 @@ export class World {
     const focus = V(...c.look), dist = cam.position.distanceTo(focus);
     cam.layers.enable(NOINK);
     const K = LOOK[s.light], sunDir = this.shotSun(id, s, L);
-    this.hemi.color.set(L.sky); this.hemi.groundColor.set(L.ground); this.hemi.intensity = L.hemiI;
-    this.sun.color.set(L.sunCol); this.sun.intensity = L.sunI;
+    this.hemi.color.set(s.light === "golden" ? "#ffd2a8" : "#cfe4ff"); this.hemi.groundColor.set("#7a8a5a"); this.hemi.intensity = 1.35;
+    this.sun.color.set(s.light === "golden" ? "#ffb070" : "#fff1dc"); this.sun.intensity = s.light === "golden" ? 3.4 : 3.1; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
     let Rr = THREE.MathUtils.clamp(dist * 1.15 + 7, 12, 95);
     if (s.light === "golden") Rr = Math.max(Rr, 30);
     if (dist > 40) Rr = Math.max(Rr, 80);
