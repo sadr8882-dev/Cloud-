@@ -1,0 +1,152 @@
+// Blocky 3D characters (our own, in the toy-brick avatar style): box torso, box arms and legs on shoulder/hip pivots,
+// a rounded block head with a painted face (expression + blink), hair / cap / bonnet / beard pieces and a skirt.
+// Posed per frame from the same options the 2D cards used (mode, expr, blink, wave, prop, tilt, walk phase).
+import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import type { Outfit, Expr, FrontOpts, SideOpts } from "./toon";
+import { twoTone } from "./shade";
+
+// metres for a 1.9 m adult (scaled by the place's scale)
+const LEG = { w: 0.3, h: 0.78, d: 0.3 }, TOR = { w: 0.64, h: 0.66, d: 0.32 }, ARM = { w: 0.28, h: 0.64, d: 0.28 }, HEAD = 0.5;
+const HIP_Y = LEG.h, SH_Y = LEG.h + TOR.h - 0.06, NECK_Y = LEG.h + TOR.h;
+
+const mats = new Map<string, THREE.Material>();
+const mat = (col: string) => {
+  let m = mats.get(col);
+  if (!m) { m = twoTone(new THREE.MeshLambertMaterial({ color: col })); mats.set(col, m); }
+  return m;
+};
+const faces = new Map<string, THREE.Material>();
+/** painted face for a skin, expression and eyelid (0 open .. 1 shut) */
+const faceMat = (skin: string, expr: Expr, lid: number, moustache?: string) => {
+  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}`;
+  let m = faces.get(key);
+  if (m) return m;
+  const cv = document.createElement("canvas"); cv.width = cv.height = 256;
+  const g = cv.getContext("2d")!, INK = "#241726";
+  g.fillStyle = skin; g.fillRect(0, 0, 256, 256);
+  g.fillStyle = INK; g.strokeStyle = INK; g.lineCap = "round"; g.lineJoin = "round";
+  const eye = (x: number) => {
+    const shut = lid > 0.6, half = lid > 0.2 && !shut;
+    if (shut || expr === "laugh" || expr === "relief") { g.lineWidth = 9; g.beginPath(); g.arc(x, expr === "laugh" ? 112 : 104, 16, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); return; }
+    if (expr === "shock") { g.fillStyle = "#ffffff"; g.beginPath(); g.ellipse(x, 100, 22, 26, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke(); g.fillStyle = INK; g.beginPath(); g.arc(x, 102, 9, 0, 7); g.fill(); return; }
+    if (expr === "grin" || expr === "relief_open") { g.lineWidth = 9; g.beginPath(); g.arc(x, 108, 15, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); return; }
+    g.beginPath(); g.ellipse(x, 100, 11, half ? 6 : 15, 0, 0, 7); g.fill();
+    g.fillStyle = "#ffffff"; g.beginPath(); g.arc(x + 4, 94, 4, 0, 7); g.fill(); g.fillStyle = INK;
+  };
+  eye(88); eye(168);
+  // brows
+  g.lineWidth = 8;
+  const brow = (x: number, s: number) => {
+    const tilt = expr === "stern" ? 10 * s : expr === "nervous" ? -10 * s : expr === "shock" ? -4 * s : 0;
+    const y = expr === "shock" ? 58 : 70; g.beginPath(); g.moveTo(x - 18, y - tilt); g.lineTo(x + 18, y + tilt); g.stroke();
+  };
+  brow(88, 1); brow(168, -1);
+  // mouth
+  g.lineWidth = 9;
+  const cx = 128, cy = 178;
+  if (expr === "laugh" || expr === "relief_open") {
+    g.fillStyle = "#5a1e28"; g.beginPath(); g.moveTo(cx - 44, cy - 14); g.quadraticCurveTo(cx, cy + 60, cx + 44, cy - 14); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = "#e86e78"; g.beginPath(); g.ellipse(cx, cy + 16, 18, 9, 0, 0, 7); g.fill();
+  } else if (expr === "shock") {
+    g.fillStyle = "#5a1e28"; g.beginPath(); g.ellipse(cx, cy + 4, 18, 24, 0, 0, 7); g.fill(); g.stroke();
+  } else if (expr === "grin") {
+    g.fillStyle = "#ffffff"; g.beginPath(); g.moveTo(cx - 40, cy - 8); g.quadraticCurveTo(cx, cy + 40, cx + 40, cy - 8); g.closePath(); g.fill(); g.stroke();
+  } else if (expr === "nervous") {
+    g.beginPath(); for (let i = 0; i <= 8; i++) g[i ? "lineTo" : "moveTo"](cx - 36 + i * 9, cy + (i % 2 ? -6 : 6)); g.stroke();
+    g.fillStyle = "#9fd4ff"; g.beginPath(); g.ellipse(208, 70, 9, 14, 0, 0, 7); g.fill();
+  } else if (expr === "stern" || expr === "pained") {
+    g.beginPath(); g.moveTo(cx - 28, cy + 8); g.quadraticCurveTo(cx, cy - 10, cx + 28, cy + 8); g.stroke();
+  } else if (expr === "neutral" || expr === "dazed") {
+    g.beginPath(); g.moveTo(cx - 22, cy); g.lineTo(cx + 22, cy); g.stroke();
+  } else { // smile, smile_closed, relief
+    g.beginPath(); g.arc(cx, cy - 22, 32, Math.PI * 0.2, Math.PI * 0.8); g.stroke();
+  }
+  if (moustache) { g.fillStyle = moustache; g.beginPath(); g.ellipse(cx - 22, cy - 22, 24, 10, 0.2, 0, 7); g.ellipse(cx + 22, cy - 22, 24, 10, -0.2, 0, 7); g.fill(); }
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  m = twoTone(new THREE.MeshLambertMaterial({ map: tex }));
+  faces.set(key, m);
+  return m;
+};
+
+const box = (w: number, h: number, d: number, r = 0.05) => new RoundedBoxGeometry(w, h, d, 3, r);
+const GEO = {
+  leg: box(LEG.w, LEG.h, LEG.d, 0.06).translate(0, -LEG.h / 2, 0),
+  arm: box(ARM.w, ARM.h, ARM.d, 0.07).translate(0, -ARM.h / 2 + 0.06, 0),
+  torso: box(TOR.w, TOR.h, TOR.d, 0.06).translate(0, TOR.h / 2, 0),
+  head: box(HEAD, HEAD, HEAD, 0.12).translate(0, HEAD / 2 + 0.04, 0),
+  face: new THREE.PlaneGeometry(HEAD * 0.9, HEAD * 0.9).translate(0, HEAD / 2 + 0.04, HEAD / 2 + 0.003),
+  hair: box(HEAD + 0.06, HEAD * 0.32, HEAD + 0.06, 0.08).translate(0, HEAD + 0.02, -0.01),
+  hairBack: box(HEAD + 0.06, HEAD * 0.7, 0.12, 0.05).translate(0, HEAD * 0.62, -HEAD / 2 - 0.02),
+  cap: box(HEAD + 0.05, HEAD * 0.26, HEAD + 0.05, 0.08).translate(0, HEAD + 0.06, 0),
+  brim: box(HEAD * 0.9, 0.05, HEAD * 0.45, 0.02).translate(0, HEAD - 0.04, HEAD * 0.55),
+  bonnet: box(HEAD + 0.14, HEAD + 0.12, HEAD * 0.75, 0.12).translate(0, HEAD / 2 + 0.08, -HEAD * 0.2),
+  beard: box(HEAD * 0.8, HEAD * 0.55, 0.12, 0.05).translate(0, 0.05, HEAD / 2 + 0.03),
+  skirt: new THREE.CylinderGeometry(TOR.w * 0.62, TOR.w * 0.95, 0.5, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 0.62).translate(0, -0.22, 0),
+  shoe: box(LEG.w + 0.02, 0.12, LEG.d + 0.1, 0.04).translate(0, -LEG.h + 0.06, 0.04),
+};
+
+export type RigOpts = { o: Outfit; front?: FrontOpts; side?: SideOpts };
+
+export class Blocky {
+  root = new THREE.Group();
+  private body = new THREE.Group();
+  private parts: Record<string, THREE.Mesh> = {};
+  private legL = new THREE.Group(); private legR = new THREE.Group(); private armL = new THREE.Group(); private armR = new THREE.Group();
+  private head = new THREE.Group();
+  constructor(parent: THREE.Object3D) {
+    const P = (name: string, geo: THREE.BufferGeometry, grp: THREE.Object3D) => { const m = new THREE.Mesh(geo, mat("#ffffff")); m.castShadow = true; m.receiveShadow = true; grp.add(m); this.parts[name] = m; return m; };
+    this.legL.position.set(-LEG.w / 2 - 0.005, HIP_Y, 0); this.legR.position.set(LEG.w / 2 + 0.005, HIP_Y, 0);
+    this.armL.position.set(-TOR.w / 2 - ARM.w / 2 - 0.01, SH_Y, 0); this.armR.position.set(TOR.w / 2 + ARM.w / 2 + 0.01, SH_Y, 0);
+    this.head.position.set(0, NECK_Y, 0);
+    P("legL", GEO.leg, this.legL); P("legR", GEO.leg, this.legR); P("shoeL", GEO.shoe, this.legL); P("shoeR", GEO.shoe, this.legR);
+    P("armL", GEO.arm, this.armL); P("armR", GEO.arm, this.armR);
+    const tor = new THREE.Group(); tor.position.y = HIP_Y; this.body.add(tor);
+    P("torso", GEO.torso, tor); P("skirt", GEO.skirt, tor);
+    P("head", GEO.head, this.head); P("face", GEO.face, this.head); P("hair", GEO.hair, this.head); P("hairBack", GEO.hairBack, this.head);
+    P("cap", GEO.cap, this.head); P("brim", GEO.brim, this.head); P("bonnet", GEO.bonnet, this.head); P("beard", GEO.beard, this.head);
+    this.body.add(this.legL, this.legR, this.armL, this.armR, this.head);
+    this.root.add(this.body);
+    this.root.visible = false;
+    parent.add(this.root);
+  }
+  /** dress the rig for an outfit and pose it; t = film time (for small idle motion) */
+  set(r: RigOpts, t: number) {
+    const o = r.o, f = r.front ?? {}, s = r.side;
+    const skin = o.skin ?? "#ffe2c2", p = this.parts;
+    p.torso.material = mat(o.jacket); p.skirt.visible = !!o.dress; p.skirt.material = mat(o.dress ?? o.jacket);
+    p.armL.material = p.armR.material = mat(o.jacket);
+    p.legL.material = p.legR.material = mat(o.pants); p.shoeL.material = p.shoeR.material = mat(o.boots);
+    p.head.material = mat(skin);
+    const expr = (s?.expr ?? f.expr ?? "neutral") as Expr, blink = Number(s?.blink ?? f.blink ?? 0);
+    p.face.material = faceMat(skin, expr, blink, o.moustache);
+    const hat = o.hat ?? null;
+    p.hair.visible = hat === "hair" || hat === "cap" || hat === "helmet"; p.hair.material = mat(o.hair ?? "#3a2a1e");
+    p.hairBack.visible = hat === "hair" && !!o.dress; p.hairBack.material = mat(o.hair ?? "#3a2a1e");
+    p.cap.visible = p.brim.visible = hat === "cap" || hat === "helmet"; p.cap.material = p.brim.material = mat(o.cap ?? "#3f6fb5");
+    if (hat === "cap") p.hair.visible = false;
+    p.bonnet.visible = hat === "bonnet"; p.bonnet.material = mat("#e9cf8f");
+    p.beard.visible = !!o.beard; p.beard.material = mat(o.beard ?? "#ffffff");
+    // ---- pose ----
+    const mode = s ? (s.mode === "march" ? "walk" : "stand") : (f.mode ?? "stand");
+    let aL = -0.05, aR = 0.05, aLx = 0, aRx = 0, lL = 0, lR = 0, lLz = 0, lRz = 0, bob = 0, tilt = 0;
+    if (mode === "walk" || mode === "march" || mode === "stroll") {
+      const ph = (s?.phase ?? f.phase ?? 0) * Math.PI * 2, A = mode === "walk" ? 0.75 : 0.5;
+      lL = Math.sin(ph) * A; lR = -lL; aLx = -lL * 0.9; aRx = lL * 0.9; bob = Math.abs(Math.cos(ph)) * 0.05;
+    } else if (mode === "fall") { // floating: arms up in a V, legs apart, slow kick
+      aL = -2.6; aR = 2.6; lLz = -0.35; lRz = 0.35; lL = 0.25 * Math.sin(t * 2.3); lR = -lL; tilt = ((f.tilt ?? 0) * Math.PI) / 180;
+    } else {
+      if (f.wave !== undefined) { aR = 2.7 - 0.35 * f.wave; }
+      if (f.prop === "hug") { aLx = aRx = -1.25; aL = 0.25; aR = -0.25; }
+      if (f.prop === "holdup") { aL = -2.5; aR = 2.5; }
+      bob = 0.008 * Math.sin(t * 2.1);
+      if (expr === "laugh") bob += 0.02 * Math.abs(Math.sin(t * 9));
+    }
+    this.armL.rotation.set(aLx, 0, aL); this.armR.rotation.set(aRx, 0, aR);
+    this.legL.rotation.set(lL, 0, lLz); this.legR.rotation.set(lR, 0, lRz);
+    this.body.position.y = bob; this.body.rotation.z = tilt;
+    this.head.rotation.set(expr === "laugh" ? -0.12 : 0, 0.15 * Math.sin(t * 0.6) * (mode === "stand" ? 1 : 0), 0);
+    this.root.visible = true;
+  }
+  hide() { this.root.visible = false; }
+}

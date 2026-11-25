@@ -131,10 +131,10 @@ const CAMS: Record<number, Key[]> = {
   5: [{ f: 352, s: (f) => dolly([5.2, 0.9, 11.6], [5.6, 0.9, 7.2], pushK(f, 352, 0.004), { fov: 42 }) }],
   6: [{ f: 412, s: (f) => dolly(add(TABLE, [0.9, 1.6, 2.6]), add(TABLE, [0, 0.95, 0]), pushK(f, 412, 0.004), { fov: 38 }) }],
   7: [{ f: 456, s: (f) => zoom([0.5, 1.6, 9.5], [0, 4.4, 0.5], 52, pushK(f, 456, 0.0016)) }],
-  8: [{ f: 565, s: (f) => dolly(add(LAMP, [0.4, 1.3, 3.4]), add(LAMP, [-0.1, 1.1, 0]), pushK(f, 565, 0.004), { fov: 38 }) }],
+  8: [{ f: 565, s: (f) => dolly(add(LAMP, [0.2, 1.55, 4.3]), add(LAMP, [-0.35, 1.3, -0.2]), pushK(f, 565, 0.004), { fov: 38 }) }],
   9: [
     { f: 627, s: (f) => dolly(add(LAMP, [2.6, 1.6, 6.0]), add(LAMP, [-0.3, 1.3, 0]), pushK(f, 627, 0.0025), { fov: 44 }) },
-    { f: F(W.lamppost) + 6, dur: 26, s: (f) => dolly(add(LAMP, [-0.7, 1.2, 2.6]), add(LAMP, [-0.3, 1.1, -0.2]), pushK(f, 669, 0.003), { fov: 40, roll: -0.03 }) },
+    { f: F(W.lamppost) + 6, dur: 26, s: (f) => dolly(add(LAMP, [-0.9, 1.5, 3.4]), add(LAMP, [-0.4, 1.3, -0.2]), pushK(f, 669, 0.003), { fov: 40, roll: -0.03 }) },
   ],
   10: [{ f: 754, s: (f) => dolly(add(LAMP, [-1.0, 1.1, 4.0]), add(LAMP, [-1.4, 0.8, 0.6]), pushK(f, 754, 0.0035), { fov: 40 }) }],
   11: [
@@ -147,7 +147,7 @@ const CAMS: Record<number, Key[]> = {
     { f: 1057, s: (f) => dolly(add(CLOCK, [0.8, -0.2, 5.0]), CLOCK, pushK(f, 1057, 0.004), { fov: 40 }) },
     { f: F(W.fall) - 30, cut: true, s: onPip([1.2, -2.2, 5.0], [0, 0.4, 0], 40, -0.04) },
   ],
-  14: [{ f: 1157, s: (f) => dolly(add(LAMP, [-0.75, 1.25, 2.4]), add(LAMP, [-0.3, 1.15, -0.2]), pushK(f, 1157, 0.005), { fov: 34 }) }],
+  14: [{ f: 1157, s: (f) => dolly(add(LAMP, [-0.95, 1.5, 3.2]), add(LAMP, [-0.4, 1.35, -0.2]), pushK(f, 1157, 0.005), { fov: 34 }) }],
   15: [{ f: 1229, s: (f) => { const p = sisAt(T(f)); return { pos: [LAMP[0] + 1.5, 1.4 + p[1] * 0.7, LAMP[2] + 6], look: [p[0], p[1] + 1.0, p[2]], fov: 44 }; } }],
   16: [
     { f: 1286, s: onSis([4, 1.0, 6], [0, 0.6, 0], 48) },

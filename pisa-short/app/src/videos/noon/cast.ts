@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { Pen, bodyFront, bodySide, fxShadow, fxContact, Outfit, Expr, FrontOpts, SideOpts, SKINS } from "./toon";
 import { FPS, SHOTS, V3, W, LAMP, TABLE, TOWER, VANE, pipAt, sisAt, smooth, clamp01 } from "./story";
 import { NOINK } from "./ink";
+import type { RigOpts } from "./blocky";
 import { cardShade, blobMaterial, CARD_K } from "./cardshade";
 
 // ---------------- canvas pool ----------------
@@ -90,7 +91,7 @@ export class Fx {
 // ---------------- placements ----------------
 export type Place = {
   key: string; draw: (p: Pen) => void; x: number; y: number; z: number;
-  scale?: number; mirror?: boolean; yaw?: number; roll?: number; size?: [number, number, number];
+  scale?: number; mirror?: boolean; yaw?: number; roll?: number; size?: [number, number, number]; rig?: RigOpts;
 };
 export type FxPlace = { key: string; cw: number; ch: number; draw: (p: Pen) => void; x: number; y: number; z: number; w: number; h: number; flat?: boolean; face?: boolean; rot?: number; soft?: boolean };
 export type CamInfo = { pos: THREE.Vector3; right: THREE.Vector3; sun: THREE.Vector3 };
@@ -150,10 +151,10 @@ const person = (cam: CamInfo, i: number, o: Outfit, x: number, y: number, z: num
   const mirror = !!side?.mirror, light = light2D(cam, mirror), seed = ((i * 5 + 3) % 7) + 1;
   if (side) {
     const s2: SideOpts = { ...side.so, light, seed };
-    return { key: `S|${okeyOf(o)}|${fkey(s2)}`, x, y, z, scale, mirror, draw: (p) => bodySide(p, o, s2), size: [w, h, k] };
+    return { key: `S|${okeyOf(o)}|${fkey(s2)}`, x, y, z, scale, mirror, draw: (p) => bodySide(p, o, s2), size: [w, h, k], rig: { o, side: s2 } };
   }
   const f2: FrontOpts = { ...fo, light, seed };
-  return { key: `F|${okeyOf(o)}|${fkey(f2)}`, x, y, z, scale, draw: (p) => bodyFront(p, o, f2), size: [w, h, k] };
+  return { key: `F|${okeyOf(o)}|${fkey(f2)}`, x, y, z, scale, draw: (p) => bodyFront(p, o, f2), size: [w, h, k], rig: { o, front: f2 } };
 };
 
 // ---------------- ground shadows ----------------

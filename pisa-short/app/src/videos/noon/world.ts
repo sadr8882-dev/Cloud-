@@ -8,6 +8,7 @@ import { LIGHTS, LOOK, LightPreset } from "./lights";
 import { TONE, CHAR, twoTone, untone } from "./shade";
 import { NOINK } from "./ink";
 import { Pool, Actor, Fx, stage } from "./cast";
+import { Blocky } from "./blocky";
 import { FPS, SHOTS, camAt, ShotDef, V3, W, TOWER, TOWER_H, VANE, LAMP, CHIMNEY, TABLE, smooth, clamp01 } from "./story";
 import { ctex } from "./paint";
 
@@ -65,6 +66,7 @@ export class World {
   private ropes: THREE.Mesh[] = [];
   private bunting = new THREE.Group();
   private ropeMat?: THREE.MeshLambertMaterial;
+  private rigs: Blocky[] = [];
   private frustum = new THREE.Frustum();
   private m4 = new THREE.Matrix4(); private v = new THREE.Vector3(); private sph = new THREE.Sphere();
 
@@ -232,9 +234,20 @@ export class World {
     const st = stage(id, t, { pos: cam.position, right, sun: sunDir });
     this.frustum.setFromProjectionMatrix(this.m4.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     let ai = 0;
+    let ri = 0;
     for (const q of st.places) {
       const sc2 = q.scale ?? 1;
       if (!this.frustum.intersectsSphere(this.sph.set(this.v.set(q.x, q.y + 1.1 * sc2, q.z), 3.5))) continue;
+      if (q.rig) { // 3D blocky character, turned toward the lens with a slight three-quarter angle
+        while (this.rigs.length <= ri) this.rigs.push(new Blocky(this.root));
+        const r = this.rigs[ri++];
+        r.set(q.rig, t);
+        r.root.position.set(q.x, q.y, q.z);
+        const yaw = Math.atan2(cam.position.x - q.x, cam.position.z - q.z) + (q.rig.side ? (q.mirror ? -Math.PI / 2 : Math.PI / 2) : 0.28 * Math.sin(ri * 1.7));
+        r.root.rotation.set(0, yaw, 0);
+        r.root.scale.setScalar(sc2);
+        continue;
+      }
       const a = this.actor(ai++);
       const [w, h, k] = q.size ?? [300, 500, 0.5];
       a.r = this.pool.req(q.key, w, h, k, q.draw);
@@ -244,6 +257,7 @@ export class World {
       a.mesh.castShadow = L.actorShadow;
     }
     for (let i = ai; i < this.actors.length; i++) this.actors[i].mesh.visible = false;
+    for (let i = ri; i < this.rigs.length; i++) this.rigs[i].hide();
     // ropes: thin cylinders between two points (sag drawn as a slight midpoint drop)
     const ropeM = this.ropeMat ??= twoTone(new THREE.MeshLambertMaterial({ color: "#c9a46a" }));
     st.ropes.forEach(([a, b2], i) => {
