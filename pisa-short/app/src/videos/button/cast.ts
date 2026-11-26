@@ -6,7 +6,7 @@ import { Pen, bodyFront, Outfit, Expr, FrontOpts, SKINS } from "./toon";
 import {
   FPS, V3, PART, W1, W2, HERO, PIP0, PIPT, HEROT, GPT, BTN_TOP, TOP_Y, MAYOR1, LECTERN, STAGE_Y, PAD, COWS, GP, GP2, GM, MAIL0, NEIGH0,
   FOUNTAIN, BAKERY, MOMP, MOMS, MOMT, DOG0, DOGM, NOSE_TOP, TOWER, CH2, SC, dogAt, DogState, smooth, clamp01, lin, stairAt, stairOut, heroStairU, runPips,
-  heroIsPip, mayorTiny, mailChicken, spaghettiOn, lemonadeOn, fireworksOn, cowAt,
+  heroIsPip, henWalk, mayorTiny, mailChicken, spaghettiOn, lemonadeOn, fireworksOn, cowAt,
 } from "./story";
 import * as X from "./fx";
 import { NOINK } from "./ink";
@@ -349,7 +349,7 @@ const p1 = (id: number, t: number) => {
       if (t < 29.5) { const k = clamp01((t - 28.6) / 0.9); fx("ring", 512, 512, X.ring, [0, 0.4, -14], 70 * k + 0.1, 70 * k + 0.1, { flat: true }); fx("ring", 512, 512, X.ring, [0, 0.5, -14], 40 * k + 0.1, 40 * k + 0.1, { flat: true }); }
       const DH: V3 = [DOG0[0] - 2.6, DOG0[1] + 6.4, DOG0[2]];
       if (t > 30.1 && t < 31.6) bubble("ahem", "AHEM...", 80, [DH[0] - 1.0, DH[1] + 2.0, DH[2] + 1.2], 3.0, 30.1, { tail: 1 });
-      if (t > 32.55) bubble("good", "GOOD\nAFTERNOON.", 66, [DH[0] - 1.0, DH[1] + 2.1, DH[2] + 1.2], 3.4, 32.55, { tail: 1 });
+      if (t > 32.55) bubble("good", "GOOD\nAFTERNOON.", 66, [DH[0] - 1.0, DH[1] + 1.25, DH[2] - 0.4], 2.6, 32.55, { tail: 1 });
       if (t > 31.3) fx("monocle", 128, 140, X.monocle, [DOG0[0] - 3.64, DOG0[1] + 6.47, DOG0[2] + 0.48], 0.5, 0.55, { face: true, yaw: -Math.PI / 2 });
       put(320, FOLK[3], [7.4, 0, 3.4], 1, "shock", { yaw: yawTo([7.4, 0, 3.4], DOG0), headTilt: -18 });
       put(321, KIDS[0], [8.2, 0, 4.4], 0.7, t > 32.6 ? "laugh" : "shock", { yaw: yawTo([8.2, 0, 4.4], DOG0), headTilt: -25 });
@@ -366,7 +366,7 @@ const p1 = (id: number, t: number) => {
       if (t > 37.1) {
         mayorAt(t < W.shrank ? "grin" : t < 38.4 ? "shock" : "shout", { prop: t < W.shrank ? "point" : undefined, wave: mayorTiny(t) ? Q(Math.sin(t * 10), 10) : undefined });
         pop([MAYOR1[0], STAGE_Y + 1.1, MAYOR1[2]], W.shrank - 0.05, 2.0);
-        if (t > 39.25) bubble("squeak", "squeak squeak!", 46, [LECTERN[0] + 0.24, LECTERN[1] + 1.48, LECTERN[2] + 0.1], 0.5, 39.25, { tail: -1 });
+        if (t > 39.25) bubble("squeak", "squeak squeak!", 46, [LECTERN[0] + 0.05, LECTERN[1] + 1.46, LECTERN[2] + 0.1], 0.45, 39.25, { tail: -1 });
       }
       break;
     }
@@ -419,13 +419,13 @@ const p1 = (id: number, t: number) => {
         hero(t < W.grabbed ? "pained" : "stern", { mode: k < 1 ? "run" : "stand", phase: t * 3, yaw: k < 1 ? yawTo([-3.0, 0, -14.7], HEROT) : yawTo(HEROT, PIPT), prop: t > W.grabbed ? "point" : undefined }, p);
         if (k < 1) { const u = (t * 1.4) % 1; fx("drop", 128, 128, X.drop, [p[0] + 0.25, p[1] + 1.5 - u * 0.4, p[2] + 0.2], 0.12, 0.12); }
       }
-      if (t > W.grabbed) word("GOTCHA!", "#4cb050", [HEROT[0] - 0.2, TOP_Y + 1.5, HEROT[2] + 0.3], 0.7, W.grabbed, 0.9, "#ffffff");
+      if (t > W.grabbed) word("GOTCHA!", "#4cb050", [HEROT[0] - 0.45, TOP_Y + 1.32, HEROT[2] + 0.3], 0.55, W.grabbed, 0.9, "#ffffff");
       break;
     }
     case 17: {
-      pip(t < W.smiled ? "neutral" : t < 62.4 ? "grin" : "laugh", { look: 1, yaw: yawTo(PIPT, HEROT) - 0.4 }, PIPT);
+      pip(t < W.smiled ? "neutral" : t < 62.4 ? "grin" : "laugh", { look: 0 }, PIPT);
       hero("stern", { prop: "point", yaw: yawTo(HEROT, PIPT) }, HEROT);
-      if (t > W.one - 0.05) bubble("onemore", "ONE\nMORE!", 92, [PIPT[0] - 0.3, TOP_Y + 1.5, PIPT[2] + 0.3], 0.75, W.one - 0.05, { tail: 1 });
+      if (t > W.one - 0.05) bubble("onemore", "ONE\nMORE!", 92, [PIPT[0] + 0.1, TOP_Y + 1.22, PIPT[2] + 0.35], 0.5, W.one - 0.05, { tail: 1 });
       break;
     }
     case 18: {
@@ -445,8 +445,8 @@ const p1 = (id: number, t: number) => {
     }
     case 20: {
       const look2 = t > W.another;
-      hero(t < W.pip4 ? "nervous" : "shock", { prop: !look2 ? "carry" : undefined, headTilt: !look2 ? 25 : 0, yaw: look2 ? yawTo(HEROT, PIPT) + 0.5 : undefined }, HEROT);
-      pip(look2 ? "shock" : "dazed", { yaw: yawTo(PIPT, HEROT) - 0.3 }, PIPT);
+      hero(t < W.pip4 ? "nervous" : "shock", { prop: !look2 ? "carry" : undefined, headTilt: !look2 ? 25 : 0, yaw: undefined }, HEROT);
+      pip(look2 ? "shock" : "dazed", { look: 1 }, PIPT);
       if (t > W.pip4 && t < 69.4) word("?!", "#e2453c", [HEROT[0] + 0.1, TOP_Y + 1.45, HEROT[2] + 0.2], 0.45, W.pip4, 1.0, "#ffffff");
       if (t > 69.9) for (const p of [PIPT, HEROT]) fx("excl", 256, 256, X.bang, [p[0], TOP_Y + 1.42, p[2] + 0.1], 0.3, 0.3);
       break;
@@ -467,7 +467,7 @@ const p2 = (id: number, t: number) => {
   else if (id === 17 && t > 60.5) cowsOn([]);
   else if (!clicked) cowsOn([0, 1, 2], overBakery); else cowsOn([]);
   // townsfolk in the square (shots that look at the town)
-  const town = ![1, 2, 3, 12, 13, 14, 15, 16, 18].includes(id) || (id === 17 && t > 60.5) || (id === 18 && t < 64.0);
+  const town = ![1, 2, 3, 8, 12, 13, 14, 15, 16, 18].includes(id) || (id === 17 && t > 60.5) || (id === 18 && t < 64.0);
   if (town && id !== 10) {
     AUD.forEach(([x, z, o, sc], i) => { if (o === MOM || o === GRANDMA) return; put(300 + i, o, [x + 0.6 * Math.sin(i), 0, z + 4.5], sc, clicked ? HAPPYS : ["nervous", "shock", "dazed"], { look: 0 }); });
   }
@@ -513,11 +513,11 @@ const p2 = (id: number, t: number) => {
       if (t > 0.5) for (const p of [PIPT, HEROT]) fx("excl", 256, 256, X.bang, [p[0], TOP_Y + 1.45 + 0.03 * Math.sin(t * 8), p[2] + 0.1], 0.3, 0.3);
       break;
     }
-    case 2: bubble("real1", "I'M THE REAL\nBIG BROTHER!", 56, [HEROT[0] + 0.15, TOP_Y + 1.55, HEROT[2] + 0.3], 1.0, 3.9, { jag: true, tail: -1 });
+    case 2: bubble("real1", "I'M THE REAL\nBIG BROTHER!", 56, [HEROT[0] + 0.1, TOP_Y + 1.38, HEROT[2] + 0.3], 0.85, 3.9, { jag: true, tail: -1 });
       if (t > 5.5) for (let i = 0; i < 3; i++) fx("sq", 256, 128, (p) => X.say(p, "squeak!", 34, { w: 256, h: 128 }), [HEROT[0] - 0.35 + i * 0.3, TOP_Y + 1.05 + i * 0.12, HEROT[2] + 0.35], 0.32, 0.16);
       break;
     case 3: {
-      bubble("real2", "I'M THE REAL\nBIG BROTHER!", 34, [PIPT[0] - 0.15, TOP_Y + 1.5, PIPT[2] + 0.3], 1.0, 7.2, { jag: true, tail: 1, t1: 8.95 });
+      bubble("real2", "I'M THE REAL\nBIG BROTHER!", 34, [PIPT[0] - 0.1, TOP_Y + 1.38, PIPT[2] + 0.3], 0.85, 7.2, { jag: true, tail: 1, t1: 8.95 });
       if (t > W.even) {
         for (let i = 0; i < 7; i++) { const u = (t - W.even) * (0.5 + hh(i, 1) * 0.4); fx(`bird${Q(t + i, 10)}`, 128, 128, (p) => X.bird(p, Q(t + i, 10)), [(hh(i, 2) - 0.5) * 6 + (hh(i, 3) - 0.5) * 10 * u, TOP_Y + 3.6 + u * 3, -16.4 + (hh(i, 4) - 0.2) * 6 * u], 0.45, 0.45); }
         fx("crack", 256, 256, X.crack, [-1.8, TOP_Y + 2.2, -14.4], 1.0, 1.0);
@@ -611,7 +611,7 @@ const p2 = (id: number, t: number) => {
         const k = Q(t, 10); fx(`hearts${k}`, 256, 256, (p) => X.hearts(p, k), [1.0, TOP_Y + 1.6, -16.1], 0.9, 0.9, { soft: true });
       } else {
         const my = yawTo(MOMS, [-4.4, 0, 14.45]);
-        put(60, MOM, MOMS, 1, t < W.woke + 0.2 ? "dazed" : "smile", t < W.woke ? { mode: "dive", pitch: -86, y: 0.2, yaw: my } : { mode: "sit", yaw: my + Math.PI, y: 0.0 });
+        put(60, MOM, MOMS, 1, t < W.woke + 0.2 ? "dazed" : "smile", t < W.woke ? { mode: "dive", pitch: -86, y: 0.2, yaw: my } : { mode: "sit", yaw: my, y: 0.0 });
         if (t < W.woke + 0.6) { const k = Q(t, 12); fx(`dizzy${k}`, 256, 128, (p) => X.dizzy(p, k), [MOMS[0], 1.3, MOMS[2]], 0.8, 0.4); }
       }
       break;
@@ -623,8 +623,8 @@ const p2 = (id: number, t: number) => {
       break;
     }
     case 20: {
-      const k = clamp01((t - 69.95) / 2.2), hp = mixV(CH2, [CH2[0] - 1.3, 0, CH2[2] + 0.6], k);
-      OUT.hen = { x: hp[0], y: 0, z: hp[2], yaw: -1.0, walk: k < 1 ? 1 : 0.3, happy: t > 72.2, flap: t > 72.3 ? 0.5 * Math.max(0, Math.sin(t * 3)) : 0 };
+      const k = clamp01((t - 69.95) / 2.2), hp = henWalk(t);
+      OUT.hen = { x: hp[0], y: 0, z: hp[2], yaw: 0.32, walk: k < 1 ? 1 : 0.3, happy: t > 72.2, flap: t > 72.3 ? 0.5 * Math.max(0, Math.sin(t * 3)) : 0 };
       fx("env", 128, 112, X.envelope, [hp[0] - 0.42, 0.92, hp[2] + 0.25], 0.26, 0.23);
       if (t > 72.2) { const kk = Q(t, 10); fx(`hearts${kk}`, 256, 256, (p) => X.hearts(p, kk), [hp[0], 1.7, hp[2]], 0.8, 0.8, { soft: true }); }
       put(380, FOLK[0], [-0.6, 0, 3.0], 1, "laugh", { yaw: yawTo([-0.6, 0, 3.0], hp), prop: "carry" });

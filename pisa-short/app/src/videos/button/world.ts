@@ -3,7 +3,7 @@
 // tower, the fair (stage, lectern, banner, loudspeaker, pie table, stalls, balloons), a fountain, the cow paddock,
 // the bakery, Mom's yard, the giant dog, cows and the chicken mailman, all posed per frame from the cast.
 import * as THREE from "three";
-import { Batch, boxGeo, V, lam, Kit, Ray, withSight, blocked } from "./build";
+import { Batch, boxGeo, V, lam, Kit, Ray, withSight } from "./build";
 import { cloudHD } from "./paint";
 import { clockTex, grassReal, sidingReal, brickReal, shingleReal, barkReal, leavesReal } from "./noonpaint";
 import { LIGHTS, LOOK, LightPreset } from "./lights";
@@ -169,7 +169,6 @@ export class World {
       ring.forEach(([x, z, yaw, w], i) => {
         if (Math.abs(x) < 5 && z < 0) return; if (x > 6 && x < 20 && z > -12 && z < 0) return;
         if (x < -18 && z > 4 && z < 13) return; // the bakery stands here
-        if (blocked(x - 5, x + 5, 0, 14, z - 5, z + 5)) return;
         const hb = new Batch(); blockHouse(hb, w, 8, [8, 9, 10, 7][i % 4], i);
         const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw; hb.build(g); R.add(g);
         this.houses.push({ g, x, z, yaw, seed: i });
