@@ -34,8 +34,8 @@ open(sys.argv[3], "w").write("\n".join(head + words + titles) + "\n")
 print(len(words), "words +", len(titles), "titles")
 PY
 rm -f /tmp/new_$$.ass
-cd $AUD/..; if [ $n = 0 ]; then python3 make_sound.py ../voice . 2>&1 | tail -1; MIX=$R/$p/audio/mix.wav
-else python3 make_sound.py $n ../voice/p$n p$n 2>&1 | tail -1; MIX=$R/$p/audio/p$n/mix.wav; fi
+if [ $n = 0 ]; then cd audio; python3 make_sound.py ../voice . 2>&1 | tail -1; MIX=$R/$p/audio/mix.wav
+else cd audio; python3 make_sound.py $n ../voice/p$n p$n 2>&1 | tail -1; MIX=$R/$p/audio/p$n/mix.wav; fi
 cd $R/$p
 ffmpeg -v error -y -i $RAW -i $MIX -map 0:v:0 -map 1:a:0 -vf "ass=$R/$p/$CAP:fontsdir=$T/fonts" -c:v libx264 -crf 18 -preset medium -pix_fmt yuv420p -c:a aac -b:a 256k -shortest ${OUT}_final.mp4
 ffmpeg -v error -y -i ${OUT}_final.mp4 -vf scale=720:1280 -c:v libx264 -profile:v main -level 3.1 -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k -ar 44100 -movflags +faststart ${OUT}_720.mp4
