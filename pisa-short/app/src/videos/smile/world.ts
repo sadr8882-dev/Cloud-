@@ -362,6 +362,82 @@ export class World {
       const lanternHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(1.3, 0.85, 0.4), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       lanternHalo.position.set(ix + 1.6, 1.15, iz - 0.9); lanternHalo.scale.setScalar(1.6); lanternHalo.layers.set(NOINK); R.add(lanternHalo);
     }
+
+    // ================= DETAIL PASS: signs, awnings, laundry, harbour clutter, flowers, room and lamp-room props =================
+    {
+      const signTex = (k: string, s: string, bg: string, fg: string) => ctex("sign" + k, 384, 128, (g) => { g.fillStyle = bg; g.fillRect(0, 0, 384, 128); g.strokeStyle = fg; g.lineWidth = 8; g.strokeRect(8, 8, 368, 112); g.fillStyle = fg; g.font = "900 64px 'DejaVu Sans', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(s, 192, 68); });
+      const awnTex = (k: string, a: string, c: string) => ctex("awn" + k, 256, 64, (g) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? a : c; g.fillRect(i * 32, 0, 32, 64); } g.fillStyle = "rgba(0,0,0,0.15)"; g.fillRect(0, 52, 256, 12); });
+      // hanging shop signs + striped awnings on the north row (fronts at z -1.1)
+      ([[-27, "BAKERY", "#f4e3c0", "#8a3a2a", "#e2453c"], [-19, "FISH", "#2f6f8a", "#f4f1ea", "#2f6f8a"], [-11, "POST", "#e2453c", "#fbf6ea", "#f2c94c"], [11, "CAFE", "#3a6a4a", "#f4e3c0", "#3a6a4a"], [19, "ROPE", "#5a4632", "#f2c94c", "#d9b38c"], [27, "BOATS", "#24365e", "#f4f1ea", "#6f9bd1"]] as const).forEach(([x, s, bg, fg, aw], i) => {
+        b.add(new THREE.BoxGeometry(0.06, 0.06, 0.9).translate(x + 1.25, 3.1, -0.65), iron);
+        b.add(new THREE.BoxGeometry(1.1, 0.42, 0.05).translate(x + 1.25, 2.78, -0.25), lam("sSign" + i, () => ({ map: signTex(s, s, bg, fg) })));
+        const awn = new THREE.BoxGeometry(1.9, 0.06, 1.0).rotateX(0.32).translate(x, 2.6, -0.62); b.add(awn, lam("sAwn" + i, () => ({ map: awnTex("" + i, aw, "#f4f1ea") })));
+        for (const sx of [-0.9, 0.9]) b.add(new THREE.BoxGeometry(0.04, 0.04, 1.0).rotateX(0.32).translate(x + sx, 2.58, -0.62), iron);
+      });
+      // house numbers, door pots and a wreath, mailboxes
+      for (const [x, z, f] of [[-27, -1.1, 1], [-19, -1.1, 1], [-11, -1.1, 1], [11, -1.1, 1], [19, -1.1, 1], [27, -1.1, 1], [-24, 7.1, -1], [-16, 7.1, -1], [-8, 7.1, -1], [8, 7.1, -1], [16, 7.1, -1], [24, 7.1, -1]] as const) {
+        b.add(new THREE.CylinderGeometry(0.2, 0.15, 0.36, 10).translate(x - 0.85, 0.18, z + f * 0.35), lam("sPot", () => ({ color: "#b8684a" })));
+        b.add(new THREE.IcosahedronGeometry(0.26, 0).translate(x - 0.85, 0.5, z + f * 0.35), lam("sBush", () => ({ map: leavesReal(1), color: "#7aa86a" })));
+        b.add(new THREE.BoxGeometry(0.3, 0.2, 0.03).translate(x + 0.75, 2.05, z + f * 0.07), lam("sNum" + x, () => ({ map: labelTex("num" + x, "" + Math.abs(x)) })));
+      }
+      for (const [x, z] of [[-17.5, 5.6], [6.4, 5.6], [-9.5, -0.2]] as const) { b.add(new THREE.BoxGeometry(0.08, 1.0, 0.08).translate(x, 0.5, z), iron); b.add(uvBox(x - 0.22, 1.0, z - 0.15, x + 0.22, 1.3, z + 0.15, 1), lam("sMailbox", () => ({ color: "#2f5f9a" }))); }
+      // laundry lines across the street with shirts, socks, a towel
+      for (const x of [-15, 15]) {
+        const a = V(x, 5.4, -1.1), c = V(x + 1.0, 5.6, 7.1), len = a.distanceTo(c);
+        b.add(new THREE.CylinderGeometry(0.015, 0.015, len, 5).applyMatrix4(new THREE.Matrix4().compose(a.clone().add(c).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), c.clone().sub(a).normalize()), V(1, 1, 1))), rope);
+        for (let k = 0; k < 7; k++) { const u = (k + 0.7) / 8, p = a.clone().lerp(c, u), sag = 0.35 * Math.sin(Math.PI * u), col = ["#e2453c", "#f4f1ea", "#6f9bd1", "#f2c94c", "#9fd3b0", "#e7a4b4", "#f4f1ea"][k];
+          b.add(new THREE.BoxGeometry(0.04, k % 3 === 1 ? 0.35 : 0.6, k % 3 === 1 ? 0.18 : 0.5).translate(p.x, p.y - sag - (k % 3 === 1 ? 0.18 : 0.3), p.z), lam("sCloth" + k, () => ({ color: col, side: THREE.DoubleSide }))); }
+      }
+      // harbour clutter: lobster traps, rope coils, fish crates with fish, an anchor, benches, flower barrels, oars
+      const trap = lam("sTrap", () => ({ map: netTex(), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, color: "#d8c8a0" }));
+      for (const [x, z, h] of [[7.2, -8.0, 0], [7.2, -8.0, 0.55], [8.0, -8.1, 0], [-7.2, -8.1, 0], [-7.2, -8.1, 0.55]] as const) { b.add(uvBox(x - 0.35, h, z - 0.3, x + 0.35, h + 0.5, z + 0.3, 1), trap); b.add(uvBox(x - 0.36, h, z - 0.31, x + 0.36, h + 0.05, z + 0.31, 1), woodD); }
+      for (const [x, z] of [[3.6, -8.3], [-3.4, -8.4], [1.0, -12.5], [3.0, -20], [1.2, -27]] as const) for (let k = 0; k < 3; k++) b.add(new THREE.TorusGeometry(0.28 - k * 0.03, 0.05, 6, 18).rotateX(Math.PI / 2).translate(x, (x > 0.9 && z < -10 ? 0.4 : 0.06) + k * 0.08, z), rope);
+      const fishM = lam("sFish", () => ({ color: "#c8d4dc" }));
+      for (const [x, z] of [[4.4, -7.0], [-5.6, -6.0]] as const) { b.add(uvBox(x - 0.4, 0, z - 0.3, x + 0.4, 0.35, z + 0.3, 1), wood); for (let k = 0; k < 6; k++) b.add(new THREE.SphereGeometry(0.1, 8, 6).scale(1.8, 0.6, 0.7).rotateY(k).translate(x - 0.25 + (k % 3) * 0.25, 0.38, z - 0.1 + Math.floor(k / 3) * 0.2), fishM); }
+      { const ax = 1.6, az = -6.4, ir = lam("sAnchor", () => ({ color: "#3a3a46" }));
+        b.add(new THREE.BoxGeometry(0.18, 1.7, 0.18).translate(ax, 0.95, az), ir); b.add(new THREE.BoxGeometry(1.1, 0.14, 0.18).translate(ax, 1.55, az), ir);
+        b.add(new THREE.TorusGeometry(0.62, 0.09, 6, 16, Math.PI).rotateZ(Math.PI).translate(ax, 0.62, az), ir); b.add(new THREE.TorusGeometry(0.16, 0.05, 6, 12).translate(ax, 1.92, az), ir);
+        b.add(new THREE.CylinderGeometry(0.7, 0.8, 0.12, 16).translate(ax, 0.06, az), stone); }
+      for (const [x, z, yaw] of [[-10, 0.6, 0], [10, 0.6, 0], [-4.5, -6.4, 0.4]] as const) { const m = new THREE.Matrix4().compose(V(x, 0, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0)), V(1, 1, 1));
+        b.add(new THREE.BoxGeometry(1.6, 0.08, 0.45).translate(0, 0.46, 0), wood, m); b.add(new THREE.BoxGeometry(1.6, 0.4, 0.06).translate(0, 0.75, -0.2), wood, m); for (const sx of [-0.7, 0.7]) b.add(new THREE.BoxGeometry(0.08, 0.46, 0.42).translate(sx, 0.23, 0), iron, m); }
+      for (const [x, z] of [[-1.0, 1.0], [3.8, 1.0], [-12.5, 6.2], [12.5, 6.2], [-24, 0.8], [24, 0.8]] as const) { b.add(new THREE.CylinderGeometry(0.35, 0.3, 0.6, 12).translate(x, 0.3, z), woodD); for (let k = 0; k < 6; k++) b.add(new THREE.IcosahedronGeometry(0.14, 0).translate(x + 0.18 * Math.cos(k), 0.7 + (k % 2) * 0.1, z + 0.18 * Math.sin(k)), lam("sFlw" + (k % 3), () => ({ color: ["#e2453c", "#f2c94c", "#e7a4b4"][k % 3] }))); b.add(new THREE.IcosahedronGeometry(0.28, 0).translate(x, 0.62, z), lam("sBush", () => ({ map: leavesReal(1), color: "#7aa86a" }))); }
+      for (let k = 0; k < 2; k++) b.add(new THREE.BoxGeometry(0.08, 0.06, 2.4).rotateX(0.5).translate(-7.6 + k * 0.3, 0.9, -7.6), wood);
+      // pier: crates, a ladder down to the water, lantern hooks, a sitting gull on posts
+      for (const [z, s] of [[-15, 1], [-22, -1], [-29, 1]] as const) { b.add(uvBox(2 + s * 0.8 - 0.35, 0.35, z - 0.35, 2 + s * 0.8 + 0.35, 1.0, z + 0.35, 1), wood); }
+      for (let k = 0; k < 6; k++) b.add(new THREE.BoxGeometry(0.5, 0.05, 0.05).translate(2 - 1.62, 0.2 - k * 0.3, -18), iron);
+      for (const sx of [-0.24, 0.24]) b.add(new THREE.BoxGeometry(0.05, 1.9, 0.05).translate(2 - 1.62 + sx, -0.55, -18), iron);
+      const gullM = lam("sGullW", () => ({ color: "#fbfbf8" })), gullG = lam("sGullG", () => ({ color: "#8a8e98" }));
+      for (const [x, z] of [[2 - 1.5, -11.5], [2 + 1.5, -24], [-20, QUAY + 0.4], [12.4, QUAY + 0.4]] as const) { const y = x === -20 || x === 12.4 ? 0.55 : 1.3; b.add(new THREE.SphereGeometry(0.13, 8, 6).scale(1.4, 1, 1).translate(x, y, z), gullM); b.add(new THREE.SphereGeometry(0.08, 8, 6).translate(x + 0.15, y + 0.12, z), gullM); b.add(new THREE.BoxGeometry(0.22, 0.04, 0.2).translate(x - 0.04, y + 0.06, z), gullG); b.add(new THREE.ConeGeometry(0.03, 0.1, 5).rotateZ(-Math.PI / 2).translate(x + 0.26, y + 0.11, z), lam("sBeak", () => ({ color: "#f2a02c" }))); }
+      // a cat on the crates
+      { const cx = 5.3, cz = -7.1, cy = 0.75, ck = lam("sCat", () => ({ color: "#3a3440" }));
+        b.add(uvBox(cx - 0.22, cy, cz - 0.12, cx + 0.22, cy + 0.22, cz + 0.12, 1), ck); b.add(uvBox(cx + 0.14, cy + 0.12, cz - 0.11, cx + 0.36, cy + 0.34, cz + 0.11, 1), ck);
+        for (const sz of [-0.07, 0.07]) b.add(new THREE.ConeGeometry(0.04, 0.08, 4).translate(cx + 0.26, cy + 0.38, cz + sz), ck);
+        b.add(new THREE.CylinderGeometry(0.025, 0.025, 0.4, 5).rotateZ(0.9).translate(cx - 0.36, cy + 0.2, cz), ck);
+        for (const sz of [-0.05, 0.05]) b.add(new THREE.BoxGeometry(0.02, 0.04, 0.04).translate(cx + 0.365, cy + 0.26, cz + sz), lam("sCatEye", () => ({ color: "#e8d84a" }))); }
+      // ---- bedroom extras: desk + chair with the denim jacket, bookshelf, alarm clock, slippers, a photo, a guitar, a toy boat
+      const [rx, , rz] = ROOM, [bx, , bz] = BED;
+      b.add(uvBox(rx - 2.9, 0.75, rz + 1.3, rx - 1.6, 0.8, rz + 2.4, 1), wood); for (const [dx, dz] of [[-2.85, 1.35], [-1.65, 1.35], [-2.85, 2.35], [-1.65, 2.35]]) b.add(new THREE.BoxGeometry(0.06, 0.75, 0.06).translate(rx + dx, 0.375, rz + dz), woodD);
+      b.add(uvBox(rx - 1.5, 0.45, rz + 1.6, rx - 1.05, 0.5, rz + 2.05, 1), woodD); b.add(uvBox(rx - 1.1, 0.5, rz + 1.6, rx - 1.05, 1.05, rz + 2.05, 1), woodD);
+      b.add(uvBox(rx - 1.13, 0.55, rz + 1.62, rx - 1.0, 1.05, rz + 2.03, 1), lam("sJacketChair", () => ({ color: "#3f7fd6" })));
+      b.add(new THREE.CylinderGeometry(0.06, 0.1, 0.05, 10).translate(rx - 2.6, 0.83, rz + 1.5), iron); b.add(new THREE.CylinderGeometry(0.015, 0.015, 0.4, 6).rotateZ(0.3).translate(rx - 2.55, 1.02, rz + 1.5), iron); b.add(new THREE.ConeGeometry(0.12, 0.14, 12, 1, true).rotateZ(2.4).translate(rx - 2.43, 1.2, rz + 1.5), lam("sDeskLamp", () => ({ color: "#e2453c", side: THREE.DoubleSide })));
+      for (let k = 0; k < 6; k++) b.add(new THREE.BoxGeometry(0.22, 0.03, 0.3).translate(rx - 2.2, 0.82 + k * 0.03, rz + 2.0), lam("sPaper" + (k % 2), () => ({ color: k % 2 ? "#f4f1ea" : "#e8dcc0" })));
+      b.add(uvBox(rx + 2.4, 0, rz + 0.4, rx + 2.95, 1.9, rz + 1.6, 1), woodD);
+      for (let s2 = 0; s2 < 4; s2++) { b.add(uvBox(rx + 2.42, 0.1 + s2 * 0.45, rz + 0.42, rx + 2.93, 0.13 + s2 * 0.45, rz + 1.58, 1), wood); for (let k = 0; k < 7; k++) b.add(new THREE.BoxGeometry(0.3, 0.26 + (k % 3) * 0.04, 0.07).translate(rx + 2.7, 0.27 + s2 * 0.45 + (k % 3) * 0.02, rz + 0.55 + k * 0.14), lam("sBk" + ((k + s2) % 5), () => ({ color: ["#c8302c", "#2f6f8a", "#f2c94c", "#3a6a4a", "#8a4ab0"][(k + s2) % 5] }))); }
+      b.add(uvBox(bx + 1.0, 0.6, bz - 0.98, bx + 1.2, 0.74, bz - 0.9, 1), lam("sClock", () => ({ color: "#e2453c" })));
+      for (const sx of [-0.12, 0.12]) b.add(uvBox(bx + 0.95 + sx - 0.07, 0, bz + 1.25, bx + 0.95 + sx + 0.07, 0.06, bz + 1.5, 1), lam("sSlipper", () => ({ color: "#8a3a3a" })));
+      b.add(new THREE.PlaneGeometry(0.34, 0.26).rotateY(-Math.PI / 2).translate(rx + 2.99, 1.6, rz - 1.2), lam("sPhoto", () => ({ map: labelTex("photo", "MOM & ME") })));
+      { const gx = rx + 2.6, gz = rz - 1.9, gm = lam("sGuitar", () => ({ color: "#b8742a" })); b.add(new THREE.SphereGeometry(0.22, 12, 8).scale(1, 1.15, 0.35).translate(gx, 0.3, gz), gm); b.add(new THREE.SphereGeometry(0.17, 12, 8).scale(1, 1, 0.35).translate(gx, 0.62, gz), gm); b.add(new THREE.BoxGeometry(0.07, 0.65, 0.05).translate(gx, 1.05, gz), woodD); }
+      // ---- lamp room extras: tool rack, hanging chains, oil cans, a barrel, pipes, a hanging lantern
+      const [ix, , iz] = LHIN;
+      b.add(uvBox(ix + 2.4, 1.2, iz - 2.9, ix + 3.4, 2.4, iz - 2.84, 1), woodD);
+      for (let k = 0; k < 5; k++) b.add(new THREE.BoxGeometry(0.06, 0.5 + (k % 2) * 0.2, 0.04).rotateZ(0.1 * (k - 2)).translate(ix + 2.55 + k * 0.2, 1.75, iz - 2.8), iron);
+      for (let k = 0; k < 3; k++) for (let j = 0; j < 12; j++) b.add(new THREE.TorusGeometry(0.05, 0.015, 4, 8).rotateY(j % 2 ? Math.PI / 2 : 0).translate(ix - 0.6 + k * 0.9, 4.5 - j * 0.09, iz - 1.6), iron);
+      for (let k = 0; k < 3; k++) b.add(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 10).translate(ix + 3.0 + (k % 2) * 0.25, 0.15, iz + 0.6 + k * 0.25), lam("sOil", () => ({ color: "#c8a23a" })));
+      b.add(new THREE.CylinderGeometry(0.4, 0.4, 0.9, 14).translate(ix - 2.6, 0.45, iz + 2.2), woodD);
+      b.add(new THREE.CylinderGeometry(0.08, 0.08, 4.6, 8).translate(ix + 3.6, 2.3, iz - 1.2), lam("sPipe", () => ({ color: "#8a5a34" }))); b.add(new THREE.CylinderGeometry(0.08, 0.08, 2.0, 8).rotateZ(Math.PI / 2).translate(ix + 2.6, 3.8, iz - 1.2), lam("sPipe", () => ({ color: "#8a5a34" })));
+      b.add(new THREE.CylinderGeometry(0.01, 0.01, 0.8, 4).translate(ix + 0.2, 4.2, iz + 0.5), iron); b.add(uvBox(ix + 0.08, 3.5, iz + 0.38, ix + 0.32, 3.8, iz + 0.62, 1), this.lampMat);
+      const lh2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(1.2, 0.8, 0.35), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); lh2.position.set(ix + 0.2, 3.65, iz + 0.5); lh2.scale.setScalar(1.6); lh2.layers.set(NOINK); R.add(lh2);
+    }
     b.build(R);
   }
   private moonPool!: THREE.Mesh;

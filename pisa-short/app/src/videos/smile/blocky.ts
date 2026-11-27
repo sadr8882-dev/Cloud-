@@ -450,7 +450,9 @@ export class Blocky {
     this.head.scale.setScalar(teen ? 0.93 : 1);
     this.body.position.y = bob - drop + (mode === "lie" ? 0 : LEG.h * (lk2 - 1)); this.body.rotation.set(pitch, 0, tilt);
     const hp = f.headTilt !== undefined ? (f.headTilt * Math.PI) / 180 : 0;
-    this.head.rotation.set((expr === "laugh" ? -0.12 : 0) + (expr === "sad" || expr === "teary" ? 0.18 : 0) + hp, (mode === "stand" ? 0.15 * Math.sin(t * 0.6) : 0) + (f.look ?? 0) * 0.25, 0);
+    const idle = expr === "creepy" ? 0 : (mode === "stand" ? 0.15 * Math.sin(t * 0.6) : 0);
+    this.head.rotation.set((expr === "laugh" ? -0.12 : 0) + (expr === "sad" || expr === "teary" ? 0.18 : 0) + hp, idle + (f.look ?? 0) * 0.25 + ((f.headYaw ?? 0) * Math.PI) / 180, ((f.headRoll ?? 0) * Math.PI) / 180);
+    if (f.breathe) { const br = 1 + 0.025 * f.breathe * Math.sin(t * 2.2); this.body.scale.set(1, 1, br); }  else this.body.scale.set(1, 1, 1);
     this.root.visible = true;
   }
   hide() { this.root.visible = false; }

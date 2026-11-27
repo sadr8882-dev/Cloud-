@@ -3,7 +3,7 @@
 // into rigs, the dog, the cows, the duck and the small props.
 import * as THREE from "three";
 import { Pen, bodyFront, Outfit, Expr, FrontOpts, SKINS } from "./toon";
-import { OBST, FPS, V3, SC, HERO_DAY, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01, lin, linR } from "./story";
+import { OBST, SHOTS, FPS, V3, SC, HERO_DAY, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01, lin, linR } from "./story";
 import * as X from "./fx";
 import { NOINK } from "./ink";
 import type { RigOpts } from "./blocky";
@@ -190,7 +190,9 @@ const KEEPER: Outfit = { jacket: "#2f4a3a", stripes: "plain", pants: "#3a3a42", 
 
 // ---------------- per-shot staging ----------------
 const leo = (ex: Mood, fo: Extra, p: V3, o: Outfit = LEO) => put(1, o, p, SC.hero, ex, fo);
-const creep = (i: number, p: V3, fo: Extra = {}, o?: Outfit) => put(100 + i, o ?? TOWN[i % TOWN.length], p, (o ?? TOWN[i % TOWN.length]).build === "kid" ? SC.kid : 1, "creepy", { blink: 0, look: 0, ...fo });
+/** everyone tilts their head the same way at the same moment (the town moves as one) */
+const sync = (t: number, amp = 14) => amp * Math.sin(t * 1.1) * smooth((Math.sin(t * 0.55) + 1) / 2);
+const creep = (i: number, p: V3, fo: Extra = {}, o?: Outfit) => put(100 + i, o ?? TOWN[i % TOWN.length], p, (o ?? TOWN[i % TOWN.length]).build === "kid" ? SC.kid : 1, "creepy", { blink: 0, look: 0, headRoll: sync(TNOW), breathe: 1, ...fo });
 
 /** keep standing figures from walking through each other: push apart any two closer than their shoulder widths */
 const separate = (ps: Place[]) => {
@@ -206,7 +208,8 @@ const separate = (ps: Place[]) => {
     if (d < need) { q.x = ox + (dx / (d || 1)) * need; q.z = oz + (dz / (d || 1)) * need; }
   }
 };
-export const stage = (id: number, t: number, cam: CamInfo): Stage => {
+export const stage = (id: number, tg: number, cam: CamInfo): Stage => {
+  const t = tg - SHOTS[id - 1].a / FPS; // shot-local time
   const out: Stage = { places: [], fx: [], ropes: [] };
   OUT = out; CAM = cam; TNOW = t;
   SUN = cam.sun.clone().normalize();
@@ -214,20 +217,29 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
   switch (id) {
     case 1: { // day: the town waves at the camera, every smile the same
       const spots: V3[] = [[0.5, 0, 1.0], [-1.6, 0, -0.5], [2.2, 0, -1.8], [-3.2, 0, -2.0], [1.0, 0, -4.2], [3.4, 0, -5.6], [-0.6, 0, -6.6], [2, 0.35, -12], [2.6, 0.35, -16], [-4, 0, -6.8], [4.2, 0, -7.6], [-2.4, 0, -8.0]];
-      spots.forEach((p, i) => creep(i, p, { yaw: toCam(p), wave: i % 3 === 0 ? 0.5 + 0.5 * Math.sin(t * 7 + i) : undefined }));
+      spots.forEach((p, i) => {
+        if (i === 7 || i === 8) { const z = p[2] - ((t * 1.1 + i) % 6); creep(i, [p[0], p[1], z], { mode: "walk", phase: t * 1.4 + i * 0.5, yaw: Math.PI, headYaw: 160 * smooth((t - 0.6) / 0.8) }); return; } // walking down the pier, the head turning all the way back to look
+        creep(i, p, { yaw: toCam(p), wave: 0.5 + 0.5 * Math.sin(t * 6), headRoll: sync(t, 18) }); // all waving in perfect step
+      });
       break;
     }
-    case 2: leo("neutral", { yaw: toCam(HERO_DAY) + 0.15, look: -0.3, blink: lidAt(t, 1) }, HERO_DAY); creep(5, [6.5, 0, -3.5], { yaw: toCam([6.5, 0, -3.5]) }); creep(1, [-1.5, 0, -2.5], { yaw: toCam([-1.5, 0, -2.5]) }); break;
+    case 2: { // Leo looks round; behind him two neighbours slowly turn their heads to stare at him
+      leo(t < 1.1 ? "neutral" : "smile", { yaw: toCam(HERO_DAY) + 0.15 - 0.25 * smooth((t - 0.4) / 0.8), look: lin([[0, -0.6], [0.9, 0.5], [1.6, 0]], t), blink: lidAt(t, 1), breathe: 1 }, HERO_DAY);
+      for (const [i, p] of [[5, [6.5, 0, -3.5]], [1, [-1.5, 0, -2.5]]] as [number, V3][]) creep(i, p, { yaw: Math.atan2(HERO_DAY[0] - p[0], HERO_DAY[2] - p[2]) - 1.2 + 1.2 * smooth((t - 0.3) / 1.2), headRoll: 0 });
+      break;
+    }
     case 3: { // the neighbours at the door: three smiles, nobody blinks
       const door: V3 = [0, 0, 6.2];
-      creep(1, [door[0] - 0.75, 0, door[2]], { yaw: toCam(door) }); creep(0, [door[0] + 0.7, 0, door[2] + 0.1], { yaw: toCam(door) }); creep(7, [door[0] + 0.05, 0, door[2] + 0.25], { yaw: toCam(door) }); creep(4, [door[0] - 1.6, 0, door[2] - 0.2], { yaw: toCam(door) });
+      const lean = 10 * smooth(t / 1.8); // they lean in, slowly, all together
+      creep(1, [door[0] - 0.75, 0, door[2]], { yaw: toCam(door), lean, headTilt: -lean * 0.5 }); creep(0, [door[0] + 0.7, 0, door[2] + 0.1], { yaw: toCam(door), lean, headTilt: -lean * 0.5 }); creep(7, [door[0] + 0.05, 0, door[2] + 0.25], { yaw: toCam(door), lean }); creep(4, [door[0] - 1.6, 0, door[2] - 0.2], { yaw: toCam(door), lean, headTilt: -lean * 0.5 });
       leo("scared", { yaw: Math.atan2(door[0] + 1.0, door[2] - 4.4), blink: 0, look: 0.5 }, [-1.0, 0, 4.4]);
       break;
     }
     case 4: { // night: the whole town in pajamas, in rows, staring up at Leo's window
       for (let r = 0; r < 4; r++) for (let k = 0; k < 7; k++) {
         const p: V3 = [-5.1 + k * 1.7 + (r % 2) * 0.6, 0, 4.8 - r * 1.7]; const i = r * 7 + k, o = TOWN[i % TOWN.length];
-        creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -32 }, PJ(o, i));
+        const turn = smooth((t - 0.15 * ((i * 7) % 11) * 0.12) / 0.5); // one by one the heads snap up to the window
+        creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -32 * turn, headRoll: sync(t, 10) * turn }, PJ(o, i));
       }
       break;
     }
@@ -235,14 +247,14 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
       for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) { const p: V3 = [-6.8 + k * 1.7, 0, 4.8 - r * 1.7], i = r * 9 + k; creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -28 }, PJ(TOWN[i % TOWN.length], i)); }
       break;
     }
-    case 6: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED); break;
+    case 6: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83, breathe: 1.5, headYaw: 8 * Math.sin(t * 0.7) }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED); break;
     case 7: { // faces at the window over the sleeping boy
       leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED);
       const wz = RWIN[2] - 0.86; // the window wall is 0.3-0.5 m behind RWIN; keep their chests and noses clear of glass and sill
-      [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05, wz + dz], { yaw: 0.15 * dx, headTilt: 6 }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
+      [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05 - 0.75 * (1 - smooth((t - 0.2 - i * 0.35) / 0.9)), wz + dz], { yaw: 0.15 * dx, headTilt: 6, headRoll: sync(t, 12) }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
       break;
     }
-    case 8: put(400, KEEPER, [LHIN[0] - 1.1, 0, LHIN[2] + 0.6], 1, "neutral", { yaw: toCam([LHIN[0] - 1.1, 0, LHIN[2] + 0.6]) + 0.35, look: -0.6, blink: lidAt(t, 400) }); break;
+    case 8: put(400, KEEPER, [LHIN[0] - 1.1, 0, LHIN[2] + 0.6], 1, t < 1.2 ? "neutral" : "smile", { headYaw: -70 + 70 * smooth((t - 0.5) / 0.9), breathe: 1, yaw: toCam([LHIN[0] - 1.1, 0, LHIN[2] + 0.6]) + 0.35, look: -0.6, blink: lidAt(t, 400) }); break;
   }
   separate(out.places);
   void ROOM; void smooth; void clamp01; void lin; void linR; void bubble; void word; void yawTo; void mixV; void Q; void fx; void HAPPY; void SCARED; void CALM;

@@ -454,7 +454,7 @@ const BUILD: Record<Build, { a: number; torso: number; legs: number; tw: number 
 
 export type FrontOpts = {
   phase?: number; expr?: Expr; mode?: "march" | "stroll" | "stand" | "sit" | "fall" | "walk" | "run" | "dive" | "ride" | "sleep" | "lie"; look?: number; lean?: number; pitch?: number; blink?: boolean | number; lift?: number;
-  prop?: Prop; tilt?: number; headTilt?: number; wave?: number;
+  prop?: Prop; tilt?: number; headTilt?: number; headRoll?: number; headYaw?: number; wave?: number; breathe?: number;
   /** canvas angle the key light comes FROM (painted crescent + thick outline side) */
   light?: number; facing?: -1 | 0 | 1; seed?: number;
 };
