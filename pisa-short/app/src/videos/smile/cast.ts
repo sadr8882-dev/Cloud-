@@ -184,7 +184,7 @@ const TOWN: Outfit[] = [
   { jacket: "#5a6a7a", stripes: "plain", pants: "#2e3a52", boots: "#2a2420", hat: "hair", hairStyle: "bald", hair: "#8a8a8a", beard: "#d8d8d8", skin: SK[1], build: "stout" },                   // old sailor
   { jacket: "#e98a6e", pants: "#3b3f52", boots: "#f4f1ea", hat: "hair", hairStyle: "pigtails", hair: "#3a2a1e", dress: "#e98a6e", build: "kid", skin: SK[3], lashes: true },                     // girl
 ];
-const PJC = ["#f0a0b8", "#f6e08a", "#a8f0c0", "#ffc890"];
+const PJC = ["#8aa8d8", "#d8a8c8", "#a8d8b8", "#e8e0b0"];
 const PJ = (o: Outfit, k: number): Outfit => ({ ...o, jacket: PJC[k % 4], stripes: "stripe", pants: PJC[k % 4], dress: o.dress ? PJC[k % 4] : undefined, apron: undefined, hat: o.hat === "chef" || o.hat === "cap" ? "hair" : o.hat, hairStyle: o.hat === "chef" || o.hat === "cap" ? "side" : o.hairStyle, waist: undefined, buttons: undefined, boots: "#5a4a6a" });
 const KEEPER: Outfit = { jacket: "#2f4a3a", stripes: "plain", pants: "#3a3a42", boots: "#2a2420", hat: "cap", cap: "#24365e", beard: "#e8e4dc", skin: SK[1], build: "stout", raincoat: "#2f4a3a", glasses: "#8a5a34" };
 
@@ -238,8 +238,8 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
     case 6: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED); break;
     case 7: { // faces at the window over the sleeping boy
       leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED);
-      const wz = RWIN[2] - 0.82; // the window wall is 0.3-0.5 m behind RWIN; keep their chests and noses clear of glass and sill
-      [[-0.36, 0.3, 0], [0.36, 0.34, 0], [0.0, 0.5, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05, wz + dz], { yaw: 0.15 * dx, headTilt: 6 }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
+      const wz = RWIN[2] - 0.86; // the window wall is 0.3-0.5 m behind RWIN; keep their chests and noses clear of glass and sill
+      [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05, wz + dz], { yaw: 0.15 * dx, headTilt: 6 }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
       break;
     }
     case 8: put(400, KEEPER, [LHIN[0] - 1.1, 0, LHIN[2] + 0.6], 1, "neutral", { yaw: toCam([LHIN[0] - 1.1, 0, LHIN[2] + 0.6]) + 0.35, look: -0.6, blink: lidAt(t, 400) }); break;
