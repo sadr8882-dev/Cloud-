@@ -5,6 +5,7 @@
 // lighthouse (gears and shelves of spare smiling faces). Lit by "day" or "night" per shot (moon, fog, warm windows).
 import * as THREE from "three";
 import { Batch, boxGeo, V, lam, Kit } from "./build";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { cloudHD, ctex } from "./paint";
 import { grassReal, sidingReal, brickReal, shingleReal, barkReal, leavesReal } from "./noonpaint";
 import { LIGHTS, LOOK, LightPreset } from "./lights";
@@ -107,6 +108,7 @@ export class World {
   private bunting = new THREE.Group(); private lights = new THREE.Group(); private smoke = new THREE.Group();
   private bulbMat = new THREE.MeshBasicMaterial({ color: "#f6e7a6" });
   private torch = new THREE.Group();
+  private lhDoor!: THREE.Mesh; private lhDoorRy = 0;
   private frustum = new THREE.Frustum();
   private m4 = new THREE.Matrix4(); private v = new THREE.Vector3(); private sph = new THREE.Sphere();
 
@@ -326,8 +328,12 @@ export class World {
       b.add(uvBox(bx - 0.78, 0, bz - 1.15, bx + 0.78, 0.35, bz + 1.1, 1), lam("sBedF", () => ({ map: plankTex("d", "#6a4a32") })));
       b.add(uvBox(bx - 0.8, 0, bz - 1.25, bx + 0.8, 1.0, bz - 1.13, 1), lam("sBedF", () => ({ map: plankTex("d", "#6a4a32") })));
       b.add(uvBox(bx - 0.74, 0.35, bz - 1.1, bx + 0.74, 0.55, bz + 1.05, 1), lam("sMatt", () => ({ color: "#e8e4dc" })));
-      b.add(new THREE.BoxGeometry(0.8, 0.08, 0.6).translate(bx, 0.59, bz - 0.72), lam("sPillow", () => ({ color: "#f4f1ea" })));
-      b.add(uvBox(bx - 0.8, 0.55, bz - 0.36, bx + 0.8, 1.04, bz + 1.08, 1), lam("sBlanket", () => ({ map: plankTex("e", "#3f5f9a"), color: "#9fb4e0" })));
+      { const pil = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.12, 0.62, 3, 0.05).translate(bx, 0.6, bz - 0.74), new THREE.MeshLambertMaterial({ color: "#f4f1ea" })); pil.receiveShadow = true; R.add(pil); }
+      { // a soft quilted duvet (rounded, patchwork squares with stitching) with the white sheet folded over the top
+        const quilt = ctex("quilt", 512, 512, (g) => { const C = ["#3f6fb5", "#5a8ad0", "#2f5a9a", "#e9cf8f", "#4a7ac0", "#c8463a"]; for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.fillStyle = C[(x * 3 + y * 5) % 6]; g.fillRect(x * 128, y * 128, 128, 128); g.fillStyle = "rgba(255,255,255,0.08)"; g.beginPath(); g.arc(x * 128 + 64, y * 128 + 64, 40, 0, 7); g.fill(); } g.strokeStyle = "rgba(255,255,255,0.6)"; g.setLineDash([8, 6]); g.lineWidth = 3; for (let i = 0; i <= 512; i += 128) { g.beginPath(); g.moveTo(i + 6, 0); g.lineTo(i + 6, 512); g.stroke(); g.beginPath(); g.moveTo(0, i + 6); g.lineTo(512, i + 6); g.stroke(); } });
+        const duvet = new THREE.Mesh(new RoundedBoxGeometry(1.62, 0.5, 1.46, 4, 0.16).translate(bx, 0.79, bz + 0.37), new THREE.MeshLambertMaterial({ map: quilt })); duvet.castShadow = true; duvet.receiveShadow = true; R.add(duvet);
+        const sheet = new THREE.Mesh(new RoundedBoxGeometry(1.64, 0.1, 0.3, 3, 0.05).rotateX(0.18).translate(bx, 1.0, bz - 0.26), new THREE.MeshLambertMaterial({ color: "#f4f1ea" })); sheet.receiveShadow = true; R.add(sheet);
+      }
       b.add(uvBox(bx + 0.9, 0, bz - 1.1, bx + 1.4, 0.6, bz - 0.6, 1), wood);
       b.add(new THREE.CylinderGeometry(0.1, 0.14, 0.32, 10).translate(bx + 1.15, 0.76, bz - 0.85), lam("sLampR", () => ({ color: "#e9cf8f" })));
       for (let k = 0; k < 4; k++) b.add(new THREE.BoxGeometry(0.06, 0.26, 0.2).translate(rx - W2 + 0.3 + k * 0.08, 1.95, rz - 0.6), lam("sBook" + k, () => ({ color: ["#c8302c", "#2f6f8a", "#f2c94c", "#3a6a4a"][k] })));
@@ -350,8 +356,8 @@ export class World {
         b.add(new THREE.BoxGeometry(1.3, 0.16, 0.4).translate(0, 2.35, 0).rotateY(ry).translate(ix + dx, 0, iz + dz), woodD);
         b.add(new THREE.BoxGeometry(1.32, H3 - 2.43, 0.3).translate(0, 2.43 + (H3 - 2.43) / 2, 0).rotateY(ry).translate(ix + dx, 0, iz + dz), lam("sLHWall", () => ({ map: brickReal(), color: "#9a8a7a" })));
         const door = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.2, 0.08).translate(0.5, 1.1, 0), lam("sDoorL", () => ({ map: plankTex("h", "#6a4a32") })));
-        door.position.set(ix + dx - Math.cos(ry) * 0.5, 0, iz + dz + Math.sin(ry) * 0.5); door.rotation.y = ry - 1.9; R.add(door); // swung wide open
-        const night = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.3).translate(0, 1.15, 0), new THREE.MeshBasicMaterial({ color: "#1a2448", fog: false })); night.position.set(ix + dx * 1.08, 0, iz + dz * 1.08); night.rotation.y = ry + Math.PI; R.add(night); }
+        door.position.set(ix + dx - Math.cos(ry) * 0.5, 0, iz + dz + Math.sin(ry) * 0.5); door.rotation.y = ry - 1.9; R.add(door); this.lhDoor = door; this.lhDoorRy = ry; // swung open by default; shot 11 opens it
+        const night = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.3).translate(0, 1.15, 0), new THREE.MeshBasicMaterial({ color: "#1a2448", fog: false })); night.position.set(ix + dx * 1.6, 0, iz + dz * 1.6); night.scale.set(3, 1.6, 1); night.rotation.y = ry + Math.PI; R.add(night); }
       const gearMat = twoTone(new THREE.MeshLambertMaterial({ color: "#a87a3a" })), gearD = twoTone(new THREE.MeshLambertMaterial({ color: "#6a5030" }));
       const gear = (x: number, y: number, z: number, r: number, teeth: number, m: THREE.Material) => {
         const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.16, 32).rotateX(Math.PI / 2), m));
@@ -376,8 +382,8 @@ export class World {
       b.add(uvBox(ix + 1.2, 0, iz - 1.2, ix + 3.2, 0.95, iz + 0.2, 1), wood); // bench
       b.add(new THREE.BoxGeometry(1.2, 0.02, 0.8).translate(ix + 2.2, 0.96, iz - 0.5), lam("sPlan", () => ({ map: labelTex("plan", "PLAN No.1"), color: "#d8e4f0" })));
       b.add(new THREE.CylinderGeometry(0.12, 0.16, 0.36, 10).translate(ix + 1.6, 1.13, iz - 0.9), this.lampMat);
-      for (let k = 0; k < 10; k++) { const a = k * 0.62, y = 0.25 + k * 0.42; b.add(new THREE.BoxGeometry(1.1, 0.06, 0.4).rotateY(-a).translate(ix + 2.3 + Math.cos(a) * 0.6, y, iz + 2.0 + Math.sin(a) * 0.6), iron); }
-      b.add(new THREE.CylinderGeometry(0.08, 0.08, 4.6, 8).translate(ix + 2.3, 2.3, iz + 2.0), iron);
+      for (let k = 0; k < 10; k++) { const a = k * 0.62, y = 0.25 + k * 0.42; b.add(new THREE.BoxGeometry(1.1, 0.06, 0.4).rotateY(-a).translate(ix + 0.5 + Math.cos(a) * 0.6, y, iz + 2.75 + Math.sin(a) * 0.6), iron); } // spiral stair, clear of the path from the door
+      b.add(new THREE.CylinderGeometry(0.08, 0.08, 4.6, 8).translate(ix + 0.5, 2.3, iz + 2.75), iron);
       const ceil = new THREE.Mesh(new THREE.CylinderGeometry(Rr + 0.3, Rr + 0.3, 0.2, 24).translate(ix, H3 + 0.1, iz), lam("sCeilL", () => ({ map: plankTex("g", "#3a2c20") }))); ceil.castShadow = false; ceil.receiveShadow = false; R.add(ceil);
       const lanternHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(1.3, 0.85, 0.4), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       lanternHalo.position.set(ix + 1.6, 1.15, iz - 0.9); lanternHalo.scale.setScalar(1.6); lanternHalo.layers.set(NOINK); R.add(lanternHalo);
@@ -556,6 +562,7 @@ export class World {
     const right = V(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0);
     const st = stage(id, t, { pos: cam.position, right, sun: sunDir });
     this.frustum.setFromProjectionMatrix(this.m4.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    if (this.lhDoor) this.lhDoor.rotation.y = this.lhDoorRy - 1.9 * (st.door ?? 1);
     this.torch.visible = !!st.torch;
     if (st.torch) { const [px2, py2, pz2] = st.torch.p, d = V(...st.torch.dir).normalize(); this.torch.position.set(px2, py2, pz2); this.torch.quaternion.setFromUnitVectors(V(0, -1, 0), d); }
     let ai = 0, ri = 0;

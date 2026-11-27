@@ -72,7 +72,7 @@ export const camAt = (id: number, f: number): Cam => {
     case 1: return { pos: [3.2 + k * 1.2, 6.4 - k * 0.8, 6.0 - k * 1.0], look: [-7 + k * 1.5, 1.6, -22], fov: 54, roll: 0 };
     case 2: return orb([HERO_DAY[0], 1.5 + k * 0.15, HERO_DAY[2]], 4.4 - k * 1.3, 3, 14 + k * 14, 36);
     case 3: return { pos: [0.7 - k * 0.2, 1.7, 2.9 - k * 0.6], look: [-0.1, 1.5, 6.4], fov: 46, roll: 0.02 * Math.sin(k * 3) };
-    case 4: return { pos: [BED[0] + 0.8 - k * 0.15, 1.6 - k * 0.15, BED[2] + 1.6 - k * 0.35], look: [BED[0] - 0.05, 0.72, BED[2] - 0.7], fov: 44, roll: 0 };
+    case 4: return { pos: [BED[0] + 0.75 - k * 0.15, 2.35 - k * 0.2, BED[2] + 0.55 - k * 0.1], look: [BED[0], 0.95, BED[2] - 0.75], fov: 46, roll: 0 };
     case 5: return { pos: [0.3, 5.6 + k * 0.4, 6.4 + k * 0.3], look: [-0.6, 0.4 + k * 0.4, -2.5], fov: 54 - k * 6, roll: 0 };
     case 6: return { pos: [BED[0] + 1.3 - k * 0.3, 1.5, BED[2] + 2.0 - k * 0.5], look: [RWIN[0], 1.6, RWIN[2]], fov: 46 - k * 6, roll: 0 };
     case 7: { const j = shake(f, 0.6 * (1 - k)); return { pos: [BED[0] + 0.9 - k * 0.25 + j, 1.6 + j, BED[2] + 2.2 - k * 0.7], look: [BED[0], 1.45, BED[2] - 0.6], fov: 48, roll: j * 0.02 }; }

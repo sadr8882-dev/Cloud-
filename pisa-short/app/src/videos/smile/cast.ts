@@ -133,7 +133,7 @@ export type Place = {
 };
 export type FxPlace = { key: string; cw: number; ch: number; draw: (p: Pen) => void; x: number; y: number; z: number; w: number; h: number; flat?: boolean; face?: boolean; yaw?: number; rot?: number; soft?: boolean };
 export type CamInfo = { pos: THREE.Vector3; right: THREE.Vector3; sun: THREE.Vector3 };
-export type Stage = { places: Place[]; fx: FxPlace[]; ropes: [V3, V3][]; torch?: { p: V3; dir: V3 } };
+export type Stage = { places: Place[]; fx: FxPlace[]; ropes: [V3, V3][]; torch?: { p: V3; dir: V3 }; door?: number };
 
 // ---------------- helpers ----------------
 let TNOW = 0;
@@ -269,10 +269,12 @@ export const stage = (id: number, tg: number, cam: CamInfo): Stage => {
       for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) { const p: V3 = [-6.8 + k * 1.7, 0, 4.8 - r * 1.7], i = r * 9 + k; creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -28 }, PJ(TOWN[i % TOWN.length], i)); }
       break;
     }
-    case 11: { // he bursts into the lamp room, stops dead, looks round at the turning gears
-      const k = smooth(t / 0.9), p: V3 = [LHIN[0] + 3.3 - 2.6 * k, 0, LHIN[2] + 3.3 - 2.6 * k];
-      leo("scared", { mode: t < 0.9 ? "run" : "stand", phase: t * 2.6, yaw: -2.35 + (t > 0.9 ? 0.6 * Math.sin((t - 0.9) * 2.2) : 0), headYaw: t > 1.0 ? -40 + 80 * smooth((t - 1.0) / 0.8) : 0, blink: 0, breathe: 3, prop: t < 0.9 ? undefined : "point" }, p);
-      { const yw = -2.35 + (t > 0.9 ? 0.6 * Math.sin((t - 0.9) * 2.2) : 0), fw = [Math.sin(yw), Math.cos(yw)], rt = [Math.cos(yw), -Math.sin(yw)]; out.torch = { p: [p[0] + fw[0] * 0.62 + rt[0] * 0.5, 1.32, p[2] + fw[1] * 0.62 + rt[1] * 0.5], dir: [fw[0], -0.35, fw[1]] }; }
+    case 11: { // the lamp-room door is shut... it bursts open and Leo runs in, stops dead, looks round at the turning gears
+      out.door = smooth((t - 0.15) / 0.3);
+      const k = smooth((t - 0.15) / 1.0), R0 = 5.4, R1 = 1.0, rr = R0 + (R1 - R0) * k, A = Math.PI / 4, p: V3 = [LHIN[0] + Math.cos(A) * rr, 0, LHIN[2] + Math.sin(A) * rr];
+      const running = t < 1.15, yw = -2.35 + (running ? 0 : 0.6 * Math.sin((t - 1.15) * 2.2));
+      leo("scared", { mode: running ? "run" : "stand", phase: t * 2.6, yaw: yw, headYaw: !running ? -40 + 80 * smooth((t - 1.2) / 0.7) : 0, blink: 0, breathe: 3, prop: t < 0.45 ? "hug" : "point" }, p);
+      if (t > 0.4) { const fw = [Math.sin(yw), Math.cos(yw)], rt = [Math.cos(yw), -Math.sin(yw)]; out.torch = { p: [p[0] + fw[0] * 0.62 + rt[0] * 0.5, 1.32, p[2] + fw[1] * 0.62 + rt[1] * 0.5], dir: [fw[0], -0.35, fw[1]] }; }
       break;
     }
     case 12: break; // the shelves of faces slide by ... the last label reads LEO
