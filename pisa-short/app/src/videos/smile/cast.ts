@@ -186,7 +186,7 @@ const TOWN: Outfit[] = [
 ];
 const PJC = ["#c8463a", "#3a9a5a", "#e0a82a", "#8a4ab0"];
 const PJ = (o: Outfit, k: number): Outfit => ({ ...o, jacket: PJC[k % 4], stripes: "stripe", pants: PJC[k % 4], dress: o.dress ? PJC[k % 4] : undefined, apron: undefined, hat: o.hat === "chef" || o.hat === "cap" ? "hair" : o.hat, hairStyle: o.hat === "chef" || o.hat === "cap" ? "side" : o.hairStyle, waist: undefined, buttons: undefined, boots: "#5a4a6a" });
-const KEEPER: Outfit = { jacket: "#2f4a3a", stripes: "plain", pants: "#3a3a42", boots: "#2a2420", hat: "cap", cap: "#24365e", beard: "#e8e4dc", skin: SK[1], build: "stout", raincoat: "#2f4a3a", glasses: "#8a5a34" };
+const KEEPER: Outfit = { jacket: "#2f4a3a", stripes: "plain", pants: "#3a3a42", boots: "#2a2420", hat: "cap", cap: "#24365e", skin: SK[1], build: "stout", raincoat: "#2f4a3a", glasses: "#8a5a34" };
 
 // ---------------- per-shot staging ----------------
 const leo = (ex: Mood, fo: Extra, p: V3, o: Outfit = LEO) => put(1, o, p, SC.hero, ex, fo);
