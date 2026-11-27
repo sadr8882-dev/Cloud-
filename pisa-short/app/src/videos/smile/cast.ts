@@ -237,7 +237,7 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
     case 6: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED); break;
     case 7: { // faces at the window over the sleeping boy
       leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED);
-      const wz = RWIN[2] - 0.55;
+      const wz = RWIN[2] - 1.05; // the window wall is 0.3-0.5 m behind RWIN; keep their chests and noses clear of glass and sill
       [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05, wz + dz], { yaw: 0.15 * dx, headTilt: 6 }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
       break;
     }
