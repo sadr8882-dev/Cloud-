@@ -46,7 +46,7 @@ export const faceY = (sc: number) => 1.72 * sc;
 export type Light = "day" | "golden" | "night";
 export type ShotDef = { id: number; a: number; b: number; light: Light; party: boolean };
 const LEN = 60;
-const LIGHTS_OF: Light[] = ["day", "day", "day", "night", "night", "night", "night", "night"];
+const LIGHTS_OF: Light[] = ["day", "day", "day", "night", "night", "night", "night", "night", "night", "night", "night", "night", "night"];
 export const SHOTS: ShotDef[] = LIGHTS_OF.map((l, i) => ({ id: i + 1, a: i * LEN, b: (i + 1) * LEN, light: l, party: false }));
 export const TOTAL = SHOTS.length * LEN;
 export const FLASH_AT = -100;
@@ -60,21 +60,34 @@ const orb = (look: V3, d: number, el: number, az: number, fov = 40): Cam => {
   return { pos: [look[0] + d * Math.sin(a) * Math.cos(e), look[1] + d * Math.sin(e), look[2] + d * Math.cos(a) * Math.cos(e)], look, fov, roll: 0 };
 };
 export const HERO_DAY: V3 = [3.0, 0, 2.2];
+const T = (f: number) => (f % LEN) / FPS;
+const glide = (u: number) => { const x = clamp01(u); return x * x * (3 - 2 * x); };
+/** hand-held shake: smooth pseudo-random wobble (metres), amplitude a */
+export const shake = (f: number, a: number) => a * 0.03 * (Math.sin(f * 0.9) * 0.6 + Math.sin(f * 2.3 + 1.3) * 0.3 + Math.sin(f * 5.1 + 0.4) * 0.1);
+/** the chase down the street at night: Leo's x along z 2.2 (shot-local time) */
+export const chaseX = (t: number) => 7 - 4.6 * t;
 export const camAt = (id: number, f: number): Cam => {
   const k = (f % LEN) / LEN;
   switch (id) {
     case 1: return { pos: [3.2 + k * 1.2, 6.4 - k * 0.8, 6.0 - k * 1.0], look: [-7 + k * 1.5, 1.6, -22], fov: 54, roll: 0 };
     case 2: return orb([HERO_DAY[0], 1.5 + k * 0.15, HERO_DAY[2]], 4.4 - k * 1.3, 3, 14 + k * 14, 36);
     case 3: return { pos: [0.7 - k * 0.2, 1.7, 2.9 - k * 0.6], look: [-0.1, 1.5, 6.4], fov: 46, roll: 0.02 * Math.sin(k * 3) };
-    case 4: return { pos: [0.3, 5.6 + k * 0.4, 6.4 + k * 0.3], look: [-0.6, 0.4 + k * 0.4, -2.5], fov: 54 - k * 6, roll: 0 };
-    case 5: return { pos: [2.6 - k * 0.8, 6.8, 6.6 - k * 1.2], look: [-12, 5, -26], fov: 54, roll: 0 };
-    case 6: return { pos: [BED[0] + 0.8 - k * 0.15, 1.6 - k * 0.15, BED[2] + 1.6 - k * 0.35], look: [BED[0] - 0.05, 0.72, BED[2] - 0.7], fov: 44, roll: 0 };
-    case 7: return { pos: [BED[0] + 1.3 - k * 0.3, 1.5, BED[2] + 2.0 - k * 0.5], look: [RWIN[0], 1.6, RWIN[2]], fov: 46 - k * 6, roll: 0 };
+    case 4: return { pos: [BED[0] + 0.8 - k * 0.15, 1.6 - k * 0.15, BED[2] + 1.6 - k * 0.35], look: [BED[0] - 0.05, 0.72, BED[2] - 0.7], fov: 44, roll: 0 };
+    case 5: return { pos: [0.3, 5.6 + k * 0.4, 6.4 + k * 0.3], look: [-0.6, 0.4 + k * 0.4, -2.5], fov: 54 - k * 6, roll: 0 };
+    case 6: return { pos: [BED[0] + 1.3 - k * 0.3, 1.5, BED[2] + 2.0 - k * 0.5], look: [RWIN[0], 1.6, RWIN[2]], fov: 46 - k * 6, roll: 0 };
+    case 7: { const j = shake(f, 0.6 * (1 - k)); return { pos: [BED[0] + 0.9 - k * 0.25 + j, 1.6 + j, BED[2] + 2.2 - k * 0.7], look: [BED[0], 1.45, BED[2] - 0.6], fov: 48, roll: j * 0.02 }; }
+    case 8: { const lx = chaseX(T(f)), j = shake(f, 1); return { pos: [lx - 3.6 + j, 1.25 + j * 0.5, 3.6], look: [lx + 1.5, 1.3, 2.0], fov: 52, roll: j * 0.025 }; }
+    case 9: return { pos: [-1.4, 0.32, 4.8], look: [1.0, 0.5, 1.6], fov: 40, roll: 0 };
+    case 10: return { pos: [2.6 - k * 0.8, 6.8, 6.6 - k * 1.2], look: [-12, 5, -26], fov: 54, roll: 0 };
+    case 11: { const j = shake(f, 0.7); return { pos: [LHIN[0] - 1.3 + j, 1.6, LHIN[2] - 1.1], look: [LHIN[0] + 1.8, 1.3, LHIN[2] + 1.9], fov: 58, roll: j * 0.02 }; }
+    case 12: { const z = LHIN[2] - 1.5 + glide(k) * 2.6; return { pos: [LHIN[0] - 2.3, 1.95, z + 0.9], look: [LHIN[0] - 3.5, 2.05, z], fov: 44, roll: 0 }; }
     default: return { pos: [LHIN[0] + 1.9 - k * 0.6, 1.75, LHIN[2] + 2.7 - k * 0.6], look: [LHIN[0] - 2.4, 1.7, LHIN[2] - 1.5], fov: 56, roll: 0 };
   }
 };
 /** per-shot light direction overrides (camera-relative az, elevation) */
-export const SUN_SHOT: Record<number, { az?: number; el?: number }> = { 2: { az: 140, el: 30 }, 3: { az: 150, el: 30 } };
+export const SUN_SHOT: Record<number, { az?: number; el?: number }> = { 2: { az: 140, el: 30 }, 3: { az: 150, el: 30 }, 8: { az: 160, el: 35 }, 9: { az: 150, el: 30 } };
 /** shots with no fog and no moon shadows (the faces at the window must read clearly, bodies included) */
-export const CLEAR_SHOTS = [7];
+export const CLEAR_SHOTS = [6, 7];
+/** shots without the drifting fog cards (close action, they would wash the frame out) */
+export const NO_FOGCARDS = [8, 9];
 export const dofAt = (_f: number) => ({ cInf: 0, focus: undefined as undefined | ((f: number) => V3) });

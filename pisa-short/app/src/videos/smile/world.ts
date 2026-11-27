@@ -13,7 +13,7 @@ import { NOINK } from "./ink";
 import { Pool, Actor, Fx, stage } from "./cast";
 import { Blocky } from "./blocky";
 import {
-  FPS, SHOTS, camAt, ShotDef, V3, SUN_SHOT, CLEAR_SHOTS, SEA_Y, QUAY, PIER, LH, LH_BASE, LH_H, LAMP_Y, LEO_HOUSE, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01,
+  FPS, SHOTS, camAt, ShotDef, V3, SUN_SHOT, CLEAR_SHOTS, NO_FOGCARDS, SEA_Y, QUAY, PIER, LH, LH_BASE, LH_H, LAMP_Y, LEO_HOUSE, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01,
 } from "./story";
 
 export const loadKit = async (): Promise<Kit> => ({});
@@ -106,6 +106,7 @@ export class World {
   private boats: THREE.Group[] = []; private foams: THREE.Mesh[] = []; private laundry: THREE.Mesh[] = []; private catTail!: THREE.Mesh;
   private bunting = new THREE.Group(); private lights = new THREE.Group(); private smoke = new THREE.Group();
   private bulbMat = new THREE.MeshBasicMaterial({ color: "#f6e7a6" });
+  private torch = new THREE.Group();
   private frustum = new THREE.Frustum();
   private m4 = new THREE.Matrix4(); private v = new THREE.Vector3(); private sph = new THREE.Sphere();
 
@@ -342,7 +343,15 @@ export class World {
     {
       const [ix, , iz] = LHIN, Rr = 4.2, H3 = 4.6;
       b.add(new THREE.CylinderGeometry(Rr + 0.3, Rr + 0.3, 0.1, 24).translate(ix, 0.0, iz), lam("sFloorL", () => ({ map: plankTex("f", "#5a4632") })));
-      for (let k = 0; k < 16; k++) { const a = Math.PI + (k / 16) * Math.PI * 1.15 - 0.2; if (Math.cos(a) * 0 + Math.sin(a) > 0.55) continue; b.add(new THREE.BoxGeometry(1.75, H3, 0.3).rotateY(-a + Math.PI / 2).translate(ix + Math.cos(a) * Rr, H3 / 2, iz + Math.sin(a) * Rr), lam("sLHWall", () => ({ map: brickReal(), color: "#9a8a7a" }))); }
+      { const DOOR_A = Math.PI / 4, N = 22; // a full ring of brick wall with a doorway toward +x+z
+        for (let k = 0; k < N; k++) { const a = (k / N) * Math.PI * 2; if (Math.abs(Math.atan2(Math.sin(a - DOOR_A), Math.cos(a - DOOR_A))) < 0.15) continue; b.add(new THREE.BoxGeometry(1.32, H3, 0.3).rotateY(-a + Math.PI / 2).translate(ix + Math.cos(a) * Rr, H3 / 2, iz + Math.sin(a) * Rr), lam("sLHWall", () => ({ map: brickReal(), color: "#9a8a7a" }))); }
+        const dx = Math.cos(DOOR_A) * Rr, dz = Math.sin(DOOR_A) * Rr, ry = -DOOR_A + Math.PI / 2;
+        for (const s2 of [-1, 1]) b.add(new THREE.BoxGeometry(0.14, 2.3, 0.4).translate(s2 * 0.58, 1.15, 0).rotateY(ry).translate(ix + dx, 0, iz + dz), woodD);
+        b.add(new THREE.BoxGeometry(1.3, 0.16, 0.4).translate(0, 2.35, 0).rotateY(ry).translate(ix + dx, 0, iz + dz), woodD);
+        b.add(new THREE.BoxGeometry(1.32, H3 - 2.43, 0.3).translate(0, 2.43 + (H3 - 2.43) / 2, 0).rotateY(ry).translate(ix + dx, 0, iz + dz), lam("sLHWall", () => ({ map: brickReal(), color: "#9a8a7a" })));
+        const door = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.2, 0.08).translate(0.5, 1.1, 0), lam("sDoorL", () => ({ map: plankTex("h", "#6a4a32") })));
+        door.position.set(ix + dx - Math.cos(ry) * 0.5, 0, iz + dz + Math.sin(ry) * 0.5); door.rotation.y = ry - 1.9; R.add(door); // swung wide open
+        const night = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.3).translate(0, 1.15, 0), new THREE.MeshBasicMaterial({ color: "#1a2448", fog: false })); night.position.set(ix + dx * 1.08, 0, iz + dz * 1.08); night.rotation.y = ry + Math.PI; R.add(night); }
       const gearMat = twoTone(new THREE.MeshLambertMaterial({ color: "#a87a3a" })), gearD = twoTone(new THREE.MeshLambertMaterial({ color: "#6a5030" }));
       const gear = (x: number, y: number, z: number, r: number, teeth: number, m: THREE.Material) => {
         const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.16, 32).rotateX(Math.PI / 2), m));
@@ -357,6 +366,7 @@ export class World {
         const y = 1.0 + r2 * 1.05;
         b.add(uvBox(ix - Rr + 0.3, y - 0.05, iz - 2.0, ix - Rr + 0.85, y, iz + 1.6, 1), wood);
         for (let k = 0; k < 5; k++) {
+          if (r2 === 1 && k === 4) { b.add(new THREE.PlaneGeometry(0.36, 0.08).rotateY(Math.PI / 2).translate(ix - Rr + 0.86, 1.0 + 1.05 + 0.04, iz - 1.7 + 4 * 0.7), lam("sLblLEO", () => ({ map: labelTex("LEO", "LEO") }))); continue; } // an empty place waiting, labelled LEO
           const z = iz - 1.7 + k * 0.7, fm = lam("sSpare" + ((r2 * 5 + k) % 4), () => ({ map: spareFace((r2 * 5 + k) % 4) }));
           b.add(new THREE.BoxGeometry(0.42, 0.42, 0.42).translate(ix - Rr + 0.56, y + 0.22, z), lam("sSkin" + ((r2 * 5 + k) % 4), () => ({ color: ["#f6c99f", "#efb98c", "#d9a074", "#a8704a"][(r2 * 5 + k) % 4] })));
           b.add(new THREE.PlaneGeometry(0.4, 0.4).rotateY(Math.PI / 2).translate(ix - Rr + 0.78, y + 0.22, z), fm);
@@ -437,6 +447,10 @@ export class World {
       for (const [x, y, z] of [[-27 + 1.45, 9.6, -6], [-11 + 1.45, 9.6, -6], [19 + 1.45, 9.6, -6], [-16 - 1.5, 9.6, 12], [8 - 1.5, 9.6, 12], [24 - 1.5, 9.6, 12]] as const)
         for (let k = 0; k < 5; k++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(0.85, 0.85, 0.9), transparent: true, opacity: 0.5, depthWrite: false })); sp.layers.set(NOINK); sp.userData = { x, y, z, k }; this.smoke.add(sp); }
       R.add(this.smoke);
+      const tc = new THREE.Mesh(new THREE.ConeGeometry(1.4, 7, 24, 1, true).translate(0, -3.5, 0), new THREE.MeshBasicMaterial({ map: beamTex(), color: new THREE.Color(1.0, 0.95, 0.75), transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false }));
+      tc.layers.set(NOINK); this.torch.add(tc);
+      const tg = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(2.0, 1.8, 1.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); tg.scale.setScalar(0.28); tg.layers.set(NOINK); this.torch.add(tg);
+      R.add(this.torch);
       for (let x = -56; x <= 56; x += 4) { const f = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: softTex(), color: new THREE.Color(0.9, 0.95, 1), transparent: true, opacity: 0.4, depthWrite: false })); f.position.set(x, SEA_Y + 0.03, QUAY - 1.1); f.layers.set(NOINK); this.foams.push(f); R.add(f); }
       // ---- bedroom extras: desk + chair with the denim jacket, bookshelf, alarm clock, slippers, a photo, a guitar, a toy boat
       const [rx, , rz] = ROOM, [bx, , bz] = BED;
@@ -522,7 +536,7 @@ export class World {
     this.glassLH.color.set(night ? new THREE.Color(3.4, 3.0, 1.9) : new THREE.Color("#cfe6f0"));
     this.seaMat.color.set(night ? "#3a5a8a" : "#3aa0c8");
     (this.seaMat.map as THREE.Texture).offset.set(t * 0.01, t * 0.004);
-    this.glows.visible = night; this.fogCards.visible = night; this.beam.visible = night; this.moonPool.visible = night; this.gulls.visible = !night;
+    this.glows.visible = night; this.fogCards.visible = night && !NO_FOGCARDS.includes(id); this.beam.visible = night; this.moonPool.visible = night; this.gulls.visible = !night;
     this.beam.rotation.y = t * 0.9 + id;
     this.fogCards.children.forEach((m, i) => { m.lookAt(cam.position.x, m.position.y, cam.position.z); m.position.x += 0; (m as THREE.Mesh).position.y = 0.8 + (i % 3) * 0.5 + 0.1 * Math.sin(t * 0.4 + i); });
     this.gulls.children.forEach((g, i) => { g.position.x = -20 + ((t * 2.2 + i * 6) % 44); g.rotation.z = 0.35 * Math.sin(t * 9 + i); });
@@ -542,6 +556,8 @@ export class World {
     const right = V(0, 0, 0).setFromMatrixColumn(cam.matrixWorld, 0);
     const st = stage(id, t, { pos: cam.position, right, sun: sunDir });
     this.frustum.setFromProjectionMatrix(this.m4.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    this.torch.visible = !!st.torch;
+    if (st.torch) { const [px2, py2, pz2] = st.torch.p, d = V(...st.torch.dir).normalize(); this.torch.position.set(px2, py2, pz2); this.torch.quaternion.setFromUnitVectors(V(0, -1, 0), d); }
     let ai = 0, ri = 0;
     for (const q of st.places) {
       const sc2 = q.scale ?? 1;
