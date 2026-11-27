@@ -29,10 +29,10 @@ export const LAMP: V3 = [LH[0], LAMP_Y, LH[2]];
 export const STREET_Z = 3;           // the main street (x along), houses north (front z -1) and south (front z 7)
 export const LEO_HOUSE: V3 = [0, 0, 11]; // front at z 7, facing -z
 export const LEO_WIN: V3 = [0, 4.6, 7.0]; // his bedroom window (2nd floor, front)
-export const ROOM: V3 = [80, 0, 0];   // his bedroom set (window in the -z wall)
+export const ROOM: V3 = [300, 0, 0];   // his bedroom set (window in the -z wall)
 export const BED: V3 = [ROOM[0] + 0.6, 0, ROOM[2] + 0.4];
 export const RWIN: V3 = [ROOM[0], 1.75, ROOM[2] - 2.5];
-export const LHIN: V3 = [80, 0, 40];  // inside the lighthouse (gears, the shelves of faces)
+export const LHIN: V3 = [300, 0, 60];  // inside the lighthouse (gears, the shelves of faces)
 /** round obstacles on the ground [x, z, radius] that figures are kept out of (well, crates, barrels, lamp posts, net racks) */
 export const OBST: [number, number, number][] = [[-2, -3.5, 1.25], [5, -6, 0.6], [5.8, -6.4, 0.6], [5.3, -7.1, 0.6], [-6, -7, 0.45], [-5.2, -7.4, 0.45],
   [-20, 0, 0.2], [-6.5, 0, 0.2], [6.5, 0, 0.2], [20, 0, 0.2], [-14, 6.4, 0.2], [14, 6.4, 0.2], [-4.5, -8.2, 0.2],
@@ -73,4 +73,6 @@ export const camAt = (id: number, f: number): Cam => {
 };
 /** per-shot light direction overrides (camera-relative az, elevation) */
 export const SUN_SHOT: Record<number, { az?: number; el?: number }> = { 2: { az: 140, el: 30 }, 3: { az: 150, el: 30 } };
+/** shots with no fog and no moon shadows (the faces at the window must read clearly, bodies included) */
+export const CLEAR_SHOTS = [7];
 export const dofAt = (_f: number) => ({ cInf: 0, focus: undefined as undefined | ((f: number) => V3) });

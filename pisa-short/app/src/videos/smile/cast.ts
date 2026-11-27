@@ -184,7 +184,7 @@ const TOWN: Outfit[] = [
   { jacket: "#5a6a7a", stripes: "plain", pants: "#2e3a52", boots: "#2a2420", hat: "hair", hairStyle: "bald", hair: "#8a8a8a", beard: "#d8d8d8", skin: SK[1], build: "stout" },                   // old sailor
   { jacket: "#e98a6e", pants: "#3b3f52", boots: "#f4f1ea", hat: "hair", hairStyle: "pigtails", hair: "#3a2a1e", dress: "#e98a6e", build: "kid", skin: SK[3], lashes: true },                     // girl
 ];
-const PJC = ["#8aa8d8", "#d8a8c8", "#a8d8b8", "#e8e0b0"];
+const PJC = ["#c8463a", "#3a9a5a", "#e0a82a", "#8a4ab0"];
 const PJ = (o: Outfit, k: number): Outfit => ({ ...o, jacket: PJC[k % 4], stripes: "stripe", pants: PJC[k % 4], dress: o.dress ? PJC[k % 4] : undefined, apron: undefined, hat: o.hat === "chef" || o.hat === "cap" ? "hair" : o.hat, hairStyle: o.hat === "chef" || o.hat === "cap" ? "side" : o.hairStyle, waist: undefined, buttons: undefined, boots: "#5a4a6a" });
 const KEEPER: Outfit = { jacket: "#2f4a3a", stripes: "plain", pants: "#3a3a42", boots: "#2a2420", hat: "cap", cap: "#24365e", beard: "#e8e4dc", skin: SK[1], build: "stout", raincoat: "#2f4a3a", glasses: "#8a5a34" };
 

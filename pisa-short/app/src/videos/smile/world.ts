@@ -13,7 +13,7 @@ import { NOINK } from "./ink";
 import { Pool, Actor, Fx, stage } from "./cast";
 import { Blocky } from "./blocky";
 import {
-  FPS, SHOTS, camAt, ShotDef, V3, SUN_SHOT, SEA_Y, QUAY, PIER, LH, LH_BASE, LH_H, LAMP_Y, LEO_HOUSE, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01,
+  FPS, SHOTS, camAt, ShotDef, V3, SUN_SHOT, CLEAR_SHOTS, SEA_Y, QUAY, PIER, LH, LH_BASE, LH_H, LAMP_Y, LEO_HOUSE, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01,
 } from "./story";
 
 export const loadKit = async (): Promise<Kit> => ({});
@@ -307,6 +307,7 @@ export class World {
         b.add(uvBox(x0, y0, z0 - 0.04, x1, y1, z1 + 0.04, 1), frame);
       b.add(uvBox(wx - ww / 2 - 0.15, wy - wh / 2 - 0.14, z1, wx + ww / 2 + 0.15, wy - wh / 2 - 0.06, z1 + 0.22, 1), frame); // sill
       for (const sx of [-1, 1]) b.add(new THREE.BoxGeometry(0.5, 1.9, 0.06).translate(wx + sx * (ww / 2 + 0.3), wy - 0.1, z1 + 0.12), lam("sCurtain", () => ({ color: "#3a4a7a" })));
+      const ceilR = new THREE.Mesh(boxGeo(V(rx - W2 - 0.2, H2, rz - D2 - 0.2), V(rx + W2 + 0.2, H2 + 0.15, rz + D2 + 4), 2, true), wallR); ceilR.castShadow = false; ceilR.receiveShadow = false; R.add(ceilR);
       const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 13).translate(wx, 3.2, z0 - 7), new THREE.MeshBasicMaterial({ map: nightBackdrop(), fog: false })); back.layers.set(NOINK); R.add(back);
       b.add(uvBox(wx - 4, -0.2, z0 - 7, wx + 4, -0.05, z0, 1), cob);
       // bed: frame, mattress, pillow, blanket; nightstand, lamp, books, ship model, poster, rug, chair with the raincoat
@@ -407,7 +408,8 @@ export class World {
     su.e.value.set(e[1], e[2], e[3], e[4]); su.stars.value = night ? 1 : 0;
     this.sky.position.copy(cam.position);
     untone(night ? "#26345a" : "#bcdaf2", this.fog.color); this.fog.near = night ? 12 : 80; this.fog.far = night ? 140 : 560;
-    scene.fog = this.fog; scene.background = null;
+    const clear = CLEAR_SHOTS.includes(id);
+    scene.fog = clear ? null : this.fog; scene.background = null; this.sun.castShadow = !clear;
     // moon high over the sea (north-west), its glint on the water
     const moonDir = V(-0.35, 0.42, -0.84).normalize();
     this.moon.visible = night; this.moon.position.copy(cam.position).addScaledVector(moonDir, 900); this.moon.scale.setScalar(2 * 900 * Math.tan(THREE.MathUtils.degToRad(2.4)));
