@@ -3,7 +3,7 @@
 // into rigs, the dog, the cows, the duck and the small props.
 import * as THREE from "three";
 import { Pen, bodyFront, Outfit, Expr, FrontOpts, SKINS } from "./toon";
-import { FPS, V3, SC, HERO_DAY, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01, lin, linR } from "./story";
+import { OBST, FPS, V3, SC, HERO_DAY, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01, lin, linR } from "./story";
 import * as X from "./fx";
 import { NOINK } from "./ink";
 import type { RigOpts } from "./blocky";
@@ -128,7 +128,7 @@ type Mood = Expr[] | Expr;
 
 // ---------------- placements ----------------
 export type Place = {
-  key: string; draw: (p: Pen) => void; x: number; y: number; z: number;
+  nosep?: boolean; key: string; draw: (p: Pen) => void; x: number; y: number; z: number;
   scale?: number; mirror?: boolean; yaw?: number; roll?: number; size?: [number, number, number]; rig?: RigOpts;
 };
 export type FxPlace = { key: string; cw: number; ch: number; draw: (p: Pen) => void; x: number; y: number; z: number; w: number; h: number; flat?: boolean; face?: boolean; yaw?: number; rot?: number; soft?: boolean };
@@ -169,9 +169,9 @@ const word = (s: string, fill: string, p: V3, w: number, t0: number, dur = 0.8, 
 // ---------------- outfits ----------------
 const SK = ["#f6c99f", "#efb98c", "#d9a074", "#a8704a"]; void SKINS;
 /** Leo, 16: black swept hair, handsome, navy hoodie under an open yellow raincoat, black jeans, white sneakers, the key */
-const LEO: Outfit = { jacket: "#24304a", stripes: "plain", pants: "#1e1e26", boots: "#f4f1ea", sole: "#d8d4cc", hat: "hair", hairStyle: "swept", hair: "#14121a",
-  skin: "#f0c8a4", handsome: true, teen: true, raincoat: "#f0b020", hood: "#24304a", key: true };
-const LEO_BED: Outfit = { ...LEO, raincoat: undefined, hood: undefined, jacket: "#3a4a6a", pants: "#3a4a6a" };
+const LEO: Outfit = { jacket: "#f6f6f2", stripes: "plain", pants: "#b4cbe8", boots: "#f6f6f2", sole: "#e8e8e4", hat: "hair", hairStyle: "puffy", hair: "#24242c",
+  skin: "#f2d0b0", chill: true, raincoat: "#3f7fd6" };
+const LEO_BED: Outfit = { ...LEO, raincoat: undefined, jacket: "#f6f6f2", pants: "#3a4a6a" };
 const TOWN: Outfit[] = [
   { jacket: "#3f6fb5", stripes: "stripe", pants: "#3b3f52", boots: "#4a3426", hat: "cap", cap: "#24365e", moustache: "#5a3b2a", skin: SK[0], build: "stout", waist: "#3a2a1e" },                 // fisherman
   { jacket: "#e07a9a", pants: "#3b3f52", boots: "#f4f1ea", hat: "hair", hairStyle: "bun", hair: "#5a3b2a", dress: "#e07a9a", skin: SK[1], lashes: true, apron: "#fbf6ea" },                   // baker's wife
@@ -191,6 +191,20 @@ const KEEPER: Outfit = { jacket: "#2f4a3a", stripes: "plain", pants: "#3a3a42", 
 const leo = (ex: Mood, fo: Extra, p: V3, o: Outfit = LEO) => put(1, o, p, SC.hero, ex, fo);
 const creep = (i: number, p: V3, fo: Extra = {}, o?: Outfit) => put(100 + i, o ?? TOWN[i % TOWN.length], p, (o ?? TOWN[i % TOWN.length]).build === "kid" ? SC.kid : 1, "creepy", { blink: 0, look: 0, ...fo });
 
+/** keep standing figures from walking through each other: push apart any two closer than their shoulder widths */
+const separate = (ps: Place[]) => {
+  const st = ps.filter((q) => q.rig && !q.nosep && (q.rig.front?.mode ?? "stand") !== "lie");
+  for (let it = 0; it < 12; it++) for (let i = 0; i < st.length; i++) for (let j = i + 1; j < st.length; j++) {
+    const a = st[i], b2 = st[j], need = 0.64 * ((a.scale ?? 1) + (b2.scale ?? 1)), dx = b2.x - a.x, dz = b2.z - a.z, d = Math.hypot(dx, dz);
+    if (d >= need || Math.abs(a.y - b2.y) > 1.2) continue;
+    const k = (need - d) / 2 / (d || 1), ux = d ? dx : 1, uz = d ? dz : 0;
+    a.x -= ux * k; a.z -= uz * k; b2.x += ux * k; b2.z += uz * k;
+  }
+  for (const q of st) for (const [ox, oz, r] of OBST) { // and out of the well, crates, barrels, posts
+    const dx = q.x - ox, dz = q.z - oz, d = Math.hypot(dx, dz), need = r + 0.55 * (q.scale ?? 1);
+    if (d < need) { q.x = ox + (dx / (d || 1)) * need; q.z = oz + (dz / (d || 1)) * need; }
+  }
+};
 export const stage = (id: number, t: number, cam: CamInfo): Stage => {
   const out: Stage = { places: [], fx: [], ropes: [] };
   OUT = out; CAM = cam; TNOW = t;
@@ -211,24 +225,25 @@ export const stage = (id: number, t: number, cam: CamInfo): Stage => {
     }
     case 4: { // night: the whole town in pajamas, in rows, staring up at Leo's window
       for (let r = 0; r < 4; r++) for (let k = 0; k < 7; k++) {
-        const p: V3 = [-4.2 + k * 1.4 + (r % 2) * 0.5, 0, 4.6 - r * 1.35]; const i = r * 7 + k, o = TOWN[i % TOWN.length];
+        const p: V3 = [-5.1 + k * 1.7 + (r % 2) * 0.6, 0, 4.8 - r * 1.7]; const i = r * 7 + k, o = TOWN[i % TOWN.length];
         creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -32 }, PJ(o, i));
       }
       break;
     }
     case 5: { // wide night: rows of tiny figures in the fog under the window
-      for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) { const p: V3 = [-5.6 + k * 1.4, 0, 4.4 - r * 1.35], i = r * 9 + k; creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -28 }, PJ(TOWN[i % TOWN.length], i)); }
+      for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) { const p: V3 = [-6.8 + k * 1.7, 0, 4.8 - r * 1.7], i = r * 9 + k; creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -28 }, PJ(TOWN[i % TOWN.length], i)); }
       break;
     }
-    case 6: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.6 }, [BED[0], 0.62, BED[2] + 0.98], LEO_BED); break;
+    case 6: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED); break;
     case 7: { // faces at the window over the sleeping boy
-      leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.6 }, [BED[0], 0.62, BED[2] + 0.98], LEO_BED);
+      leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED);
       const wz = RWIN[2] - 0.55;
-      [[-0.42, 0.0], [0.38, 0.05], [0.0, -0.12], [-0.85, -0.1], [0.82, -0.08]].forEach(([dx, dy], i) => creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05, wz - Math.abs(dx) * 0.3], { yaw: 0.15 * dx, headTilt: 6 }, PJ(TOWN[(i + 3) % TOWN.length], i)));
+      [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05, wz + dz], { yaw: 0.15 * dx, headTilt: 6 }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
       break;
     }
     case 8: put(400, KEEPER, [LHIN[0] - 1.1, 0, LHIN[2] + 0.6], 1, "neutral", { yaw: toCam([LHIN[0] - 1.1, 0, LHIN[2] + 0.6]) + 0.35, look: -0.6, blink: lidAt(t, 400) }); break;
   }
+  separate(out.places);
   void ROOM; void smooth; void clamp01; void lin; void linR; void bubble; void word; void yawTo; void mixV; void Q; void fx; void HAPPY; void SCARED; void CALM;
   return out;
 };

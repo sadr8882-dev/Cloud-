@@ -311,13 +311,13 @@ export class World {
       b.add(uvBox(wx - 4, -0.2, z0 - 7, wx + 4, -0.05, z0, 1), cob);
       // bed: frame, mattress, pillow, blanket; nightstand, lamp, books, ship model, poster, rug, chair with the raincoat
       const [bx, , bz] = BED;
-      b.add(uvBox(bx - 0.6, 0, bz - 1.15, bx + 0.6, 0.35, bz + 1.1, 1), lam("sBedF", () => ({ map: plankTex("d", "#6a4a32") })));
-      b.add(uvBox(bx - 0.62, 0, bz - 1.25, bx + 0.62, 1.0, bz - 1.13, 1), lam("sBedF", () => ({ map: plankTex("d", "#6a4a32") })));
-      b.add(uvBox(bx - 0.55, 0.35, bz - 1.1, bx + 0.55, 0.55, bz + 1.05, 1), lam("sMatt", () => ({ color: "#e8e4dc" })));
-      b.add(new THREE.BoxGeometry(0.7, 0.16, 0.36).translate(bx, 0.63, bz - 0.85), lam("sPillow", () => ({ color: "#f4f1ea" })));
-      b.add(uvBox(bx - 0.6, 0.55, bz - 0.35, bx + 0.6, 0.75, bz + 1.08, 1), lam("sBlanket", () => ({ map: plankTex("e", "#3f5f9a"), color: "#9fb4e0" })));
-      b.add(uvBox(bx + 0.75, 0, bz - 1.1, bx + 1.25, 0.6, bz - 0.6, 1), wood);
-      b.add(new THREE.CylinderGeometry(0.1, 0.14, 0.32, 10).translate(bx + 1.0, 0.76, bz - 0.85), lam("sLampR", () => ({ color: "#e9cf8f" })));
+      b.add(uvBox(bx - 0.78, 0, bz - 1.15, bx + 0.78, 0.35, bz + 1.1, 1), lam("sBedF", () => ({ map: plankTex("d", "#6a4a32") })));
+      b.add(uvBox(bx - 0.8, 0, bz - 1.25, bx + 0.8, 1.0, bz - 1.13, 1), lam("sBedF", () => ({ map: plankTex("d", "#6a4a32") })));
+      b.add(uvBox(bx - 0.74, 0.35, bz - 1.1, bx + 0.74, 0.55, bz + 1.05, 1), lam("sMatt", () => ({ color: "#e8e4dc" })));
+      b.add(new THREE.BoxGeometry(0.8, 0.08, 0.6).translate(bx, 0.59, bz - 0.72), lam("sPillow", () => ({ color: "#f4f1ea" })));
+      b.add(uvBox(bx - 0.8, 0.55, bz - 0.36, bx + 0.8, 1.04, bz + 1.08, 1), lam("sBlanket", () => ({ map: plankTex("e", "#3f5f9a"), color: "#9fb4e0" })));
+      b.add(uvBox(bx + 0.9, 0, bz - 1.1, bx + 1.4, 0.6, bz - 0.6, 1), wood);
+      b.add(new THREE.CylinderGeometry(0.1, 0.14, 0.32, 10).translate(bx + 1.15, 0.76, bz - 0.85), lam("sLampR", () => ({ color: "#e9cf8f" })));
       for (let k = 0; k < 4; k++) b.add(new THREE.BoxGeometry(0.06, 0.26, 0.2).translate(rx - W2 + 0.3 + k * 0.08, 1.95, rz - 0.6), lam("sBook" + k, () => ({ color: ["#c8302c", "#2f6f8a", "#f2c94c", "#3a6a4a"][k] })));
       b.add(uvBox(rx - W2, 1.8, rz - 1.0, rx - W2 + 0.35, 1.84, rz + 0.4, 1), wood);
       b.add(new THREE.BoxGeometry(0.16, 0.18, 0.5).translate(rx - W2 + 0.18, 1.94, rz + 0.05), lam("sShip", () => ({ color: "#7a4f33" })));
@@ -340,7 +340,7 @@ export class World {
         for (let k = 0; k < 4; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(r * 1.6, r * 0.1, 0.18), m); sp.rotation.z = (k / 4) * Math.PI; g.add(sp); }
         g.position.set(x, y, z); g.traverse((o) => { const mm = o as THREE.Mesh; if (mm.isMesh) { mm.castShadow = true; mm.receiveShadow = true; } }); R.add(g); this.gears.push(g);
       };
-      gear(ix - 1.6, 2.6, iz - 3.6, 1.1, 18, gearMat); gear(ix + 0.2, 3.3, iz - 3.7, 0.7, 12, gearD); gear(ix + 1.4, 2.2, iz - 3.55, 0.9, 15, gearMat); gear(ix - 0.4, 1.4, iz - 3.65, 0.5, 9, gearD); gear(ix + 0.9, 3.9, iz - 3.6, 0.45, 8, gearMat);
+      gear(ix - 1.4, 2.6, iz - 3.15, 1.0, 18, gearMat); gear(ix + 0.25, 3.3, iz - 3.3, 0.65, 12, gearD); gear(ix + 1.25, 2.1, iz - 3.15, 0.8, 15, gearMat); gear(ix - 0.35, 1.3, iz - 3.3, 0.45, 9, gearD); gear(ix + 0.85, 3.85, iz - 2.95, 0.4, 8, gearMat);
       // shelves of spare faces on the left wall
       for (let r2 = 0; r2 < 3; r2++) {
         const y = 1.0 + r2 * 1.05;

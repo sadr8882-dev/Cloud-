@@ -38,6 +38,7 @@ const clothMat = (col: string, kind: "shirt" | "pants", force?: string) => {
   else if (style === "dots") { g.fillStyle = "#ffffff"; for (let y = 0; y < 256; y += 48) for (let x = (y / 48) % 2 ? 24 : 0; x < 256; x += 48) { g.beginPath(); g.arc(x + 12, y + 12, 10, 0, 7); g.fill(); } }
   else if (style === "tank") { g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, 256, 256); g.fillStyle = col; g.beginPath(); g.moveTo(40, 0); g.lineTo(80, 0); g.quadraticCurveTo(128, 70, 176, 0); g.lineTo(216, 0); g.lineTo(230, 256); g.lineTo(26, 256); g.closePath(); g.fill(); }
   else if (style === "denim") { g.fillStyle = "#3d5a8a"; g.fillRect(0, 0, 256, 256); for (let k = 0; k < 3000; k++) { g.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"; g.fillRect(Math.random() * 256, Math.random() * 256, 2, 5); } g.strokeStyle = "rgba(230,190,120,0.6)"; g.setLineDash([6, 5]); g.lineWidth = 3; g.strokeRect(10, 10, 236, 236); }
+  else if (style === "ldenim" || style === "djacket") { g.fillStyle = col; g.fillRect(0, 0, 256, 256); for (let k = 0; k < 3500; k++) { g.fillStyle = (k * 7919) % 2 ? "rgba(255,255,255,0.10)" : "rgba(0,20,60,0.10)"; g.fillRect((k * 37) % 256, (k * 91) % 256, 2, 6); } g.strokeStyle = style === "djacket" ? "rgba(255,255,255,0.75)" : "rgba(230,190,120,0.6)"; g.setLineDash([6, 5]); g.lineWidth = 3; g.strokeRect(10, 10, 236, 236); g.setLineDash([]); }
   else if (style === "fire") { g.fillStyle = "#e9e2b0"; g.fillRect(0, 150, 256, 26); g.fillRect(0, 210, 256, 18); g.fillStyle = "#c9c9c9"; g.fillRect(0, 156, 256, 12); }
   else if (style === "metal") { const gr = g.createLinearGradient(0, 0, 256, 256); gr.addColorStop(0, light); gr.addColorStop(0.5, col); gr.addColorStop(1, dark); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); g.strokeStyle = dark; g.lineWidth = 4; g.strokeRect(12, 12, 232, 232); g.fillStyle = dark; for (const [x, y] of [[24, 24], [232, 24], [24, 232], [232, 232]]) { g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); } }
   for (let k = 0; k < 1500; k++) { g.fillStyle = k % 2 ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.04)"; g.fillRect((k * 37) % 256, (k * 91) % 256, 2, 2); }
@@ -49,7 +50,7 @@ const faces = new Map<string, THREE.Material>();
 const faceMat = (o: Outfit, expr: Expr, lid: number, look = 0) => {
   const skin = o.skin ?? "#ffe2c2", moustache = o.moustache;
   const lk = Math.round(Math.max(-1, Math.min(1, look)) * 2) / 2;
-  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}|${lk}|${o.blush ? 1 : 0}${o.freckles ? 1 : 0}${o.lashes ? 1 : 0}|${o.robot ? "R" : ""}|${o.handsome ? "H" : ""}`;
+  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}|${lk}|${o.blush ? 1 : 0}${o.freckles ? 1 : 0}${o.lashes ? 1 : 0}|${o.robot ? "R" : ""}|${o.handsome ? "H" : ""}${o.chill ? "C" : ""}`;
   let m = faces.get(key);
   if (m) return m;
   const cv = document.createElement("canvas"); cv.width = cv.height = 256;
@@ -85,6 +86,25 @@ const faceMat = (o: Outfit, expr: Expr, lid: number, look = 0) => {
     g.lineWidth = 3; g.beginPath(); g.moveTo(40, 158); g.quadraticCurveTo(128, 196, 216, 158); g.stroke();
     for (let i = 1; i < 12; i++) { const x = 30 + i * 16.3, yt = 146 + 32 * (1 - ((x - 128) / 98) ** 2) * 0.95, yb = 146 + 90 * (1 - ((x - 128) / 98) ** 2) * 0.9; g.beginPath(); g.moveTo(x, yt); g.lineTo(x, Math.max(yt + 4, yb)); g.stroke(); }
     g.lineWidth = 5; for (const [x, d] of [[30, -1], [226, 1]] as const) { g.beginPath(); g.moveTo(x, 146); g.quadraticCurveTo(x + d * 10, 136, x + d * 6, 124); g.stroke(); }
+    return done();
+  }
+  if (o.chill) { // the hero, simple avatar face: calm half-lidded eyes, a small smile; wide eyes and an "o" when scared
+    const shut = lid > 0.6, scared = expr === "scared" || expr === "shock" || expr === "nervous", sad2 = expr === "teary" || expr === "sad" || expr === "cry";
+    g.fillStyle = INK; g.strokeStyle = INK; g.lineCap = "round";
+    for (const x of [92, 164]) {
+      if (shut) { g.lineWidth = 7; g.beginPath(); g.moveTo(x - 14, 108); g.quadraticCurveTo(x, 116, x + 14, 108); g.stroke(); continue; }
+      if (scared) { g.fillStyle = "#ffffff"; g.beginPath(); g.ellipse(x, 102, 16, 19, 0, 0, 7); g.fill(); g.lineWidth = 4; g.stroke(); g.fillStyle = INK; g.beginPath(); g.arc(x + lk * 4, 104, 7, 0, 7); g.fill(); continue; }
+      const px = x + lk * 5; g.beginPath(); g.ellipse(px, 106, 10, 14, 0, 0, 7); g.fill();
+      g.fillStyle = skin; g.fillRect(x - 16, 84, 32, sad2 ? 12 : 16); g.fillStyle = INK; // the half lid
+      g.lineWidth = 5; g.beginPath(); g.moveTo(x - 13, sad2 ? 96 : 100); g.lineTo(x + 13, sad2 ? 98 : 100); g.stroke();
+      g.fillStyle = "#ffffff"; g.beginPath(); g.arc(px + 3, 106, 3, 0, 7); g.fill(); g.fillStyle = INK;
+      if (sad2) { g.fillStyle = "#9fd8ff"; g.beginPath(); g.ellipse(x + 8, 132, 5, 9, 0, 0, 7); g.fill(); g.fillStyle = INK; }
+    }
+    if (scared) { g.lineWidth = 5; for (const [x, d] of [[92, 1], [164, -1]] as const) { g.beginPath(); g.moveTo(x - 14, 72 + 6 * d); g.lineTo(x + 14, 72 - 6 * d); g.stroke(); } }
+    g.lineWidth = 5;
+    if (scared) { g.fillStyle = "#5a1e28"; g.beginPath(); g.ellipse(128, 168, 9, 12, 0, 0, 7); g.fill(); g.stroke(); }
+    else if (sad2) { g.beginPath(); g.moveTo(114, 170); g.quadraticCurveTo(128, 162, 142, 170); g.stroke(); }
+    else { g.beginPath(); g.moveTo(114, 160); g.quadraticCurveTo(128, 172, 144, 158); g.stroke(); }
     return done();
   }
   if (o.handsome) { // the hero: defined brows, almond eyes with brown irises, a small nose line, a calm half smile
@@ -215,9 +235,13 @@ const GEO = {
   swoop: box(HEAD * 1.1, 0.2, HEAD * 0.78, 0.07).rotateZ(-0.14).rotateX(0.22).translate(0.04, HEAD + 0.07, 0.1),
   strand: box(0.2, 0.06, 0.07, 0.025).rotateZ(-0.7).translate(0.13, HEAD * 0.93, HEAD / 2 + 0.03),
   lock: box(0.17, 0.06, 0.36, 0.028),
-  coatF: box(0.2, TOR.h + 0.28, 0.04, 0.015).translate(0, (TOR.h - 0.28) / 2, 0),
+  coatF: box(0.25, TOR.h + 0.28, 0.04, 0.015).translate(0, (TOR.h - 0.28) / 2, 0),
   coatB: box(TOR.w + 0.08, TOR.h + 0.28, 0.04, 0.015).translate(0, (TOR.h - 0.28) / 2, -TOR.d / 2 - 0.03),
   coatS: box(0.04, TOR.h + 0.28, TOR.d + 0.08, 0.015).translate(0, (TOR.h - 0.28) / 2, 0),
+  flap: box(0.17, 0.07, 0.03, 0.01),
+  lapel: box(0.09, 0.26, 0.03, 0.01),
+  puff: new THREE.SphereGeometry(0.115, 12, 9),
+  btnF: new THREE.CylinderGeometry(0.018, 0.018, 0.012, 8).rotateX(Math.PI / 2),
   hoodB: box(0.5, 0.2, 0.18, 0.06).translate(0, TOR.h - 0.02, -TOR.d / 2 - 0.08),
   keyp: box(0.05, 0.1, 0.016, 0.01).translate(0, TOR.h - 0.3, TOR.d / 2 + 0.03),
   keys: new THREE.BoxGeometry(0.012, 0.24, 0.012).translate(0, TOR.h - 0.14, TOR.d / 2 + 0.025),
@@ -232,7 +256,7 @@ const GEO = {
   brimBack: box(HEAD * 0.9, 0.05, HEAD * 0.45, 0.02).translate(0, HEAD - 0.04, -HEAD * 0.55),
   bonnet: box(HEAD + 0.14, HEAD + 0.12, HEAD * 0.75, 0.12).translate(0, HEAD / 2 + 0.08, -HEAD * 0.2),
   beard: box(HEAD * 0.8, HEAD * 0.55, 0.12, 0.05).translate(0, 0.05, HEAD / 2 + 0.03),
-  skirt: new THREE.CylinderGeometry(TOR.w * 0.62, TOR.w * 0.95, 0.5, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 0.62).translate(0, -0.22, 0),
+  skirt: new THREE.CylinderGeometry(TOR.w * 0.5, TOR.w * 0.88, 0.5, 4, 1).rotateY(Math.PI / 4).scale(1, 1, 0.62).translate(0, -0.22, 0),
   topHat: new THREE.CylinderGeometry(0.21, 0.21, 0.44, 20).translate(0, HEAD + 0.27, 0),
   topBrim: new THREE.CylinderGeometry(0.36, 0.36, 0.04, 24).translate(0, HEAD + 0.06, 0),
   topBand: new THREE.CylinderGeometry(0.215, 0.215, 0.09, 20).translate(0, HEAD + 0.12, 0),
@@ -277,7 +301,8 @@ export class Blocky {
     for (let i = 0; i < 3; i++) { const b = P("btn" + i, GEO.btn, tor); b.position.set(0, TOR.h * (0.72 - i * 0.24), TOR.d / 2 + 0.012); }
     P("tie", GEO.tie, tor); P("tieKnot", GEO.tieKnot, tor); P("waist", GEO.waist, tor); P("buckle", GEO.buckle, tor); P("apron", GEO.apron, tor); P("backpack", GEO.backpack, tor);
     P("sash", GEO.sash, tor);
-    for (const sx of [-1, 1]) { const c = P("coatF" + (sx > 0 ? "R" : "L"), GEO.coatF, tor); c.position.set(sx * (TOR.w / 2 - 0.08), 0, TOR.d / 2 + 0.03); const d = P("coatS" + (sx > 0 ? "R" : "L"), GEO.coatS, tor); d.position.x = sx * (TOR.w / 2 + 0.03); }
+    for (const sx of [-1, 1]) { const c = P("coatF" + (sx > 0 ? "R" : "L"), GEO.coatF, tor); c.position.set(sx * (TOR.w / 2 - 0.13), 0, TOR.d / 2 + 0.03); const d = P("coatS" + (sx > 0 ? "R" : "L"), GEO.coatS, tor); d.position.x = sx * (TOR.w / 2 - 0.03); d.scale.set(1, 1, 0.92); }
+    for (const sx of [-1, 1]) { const s2 = sx > 0 ? "R" : "L"; const f = P("flap" + s2, GEO.flap, tor); f.position.set(sx * (TOR.w / 2 - 0.08), TOR.h - 0.22, TOR.d / 2 + 0.055); const bt = P("btnF" + s2, GEO.btnF, tor); bt.position.set(sx * (TOR.w / 2 - 0.08), TOR.h - 0.235, TOR.d / 2 + 0.075); const l = P("lapel" + s2, GEO.lapel, tor); l.position.set(sx * 0.13, TOR.h - 0.12, TOR.d / 2 + 0.05); l.rotation.z = sx * 0.45; }
     P("coatB", GEO.coatB, tor); P("hoodB", GEO.hoodB, tor); P("keyp", GEO.keyp, tor); P("keys", GEO.keys, tor);
     for (const s of [-1, 1]) { const b = P("bow" + (s > 0 ? "R" : "L"), GEO.bow, tor); b.position.set(s * 0.09, TOR.h - 0.08, TOR.d / 2 + 0.05); b.rotation.z = s > 0 ? Math.PI : 0; }
     for (const s of [-1, 1]) { const b = P("bolt" + (s > 0 ? "R" : "L"), GEO.bolt, this.head); b.position.set(s * (HEAD / 2 + 0.04), HEAD * 0.5, 0); }
@@ -286,6 +311,7 @@ export class Blocky {
     P("hair", GEO.hair, this.head); P("fringe", GEO.fringe, this.head); P("sideL", GEO.sideL, this.head); P("sideR", GEO.sideR, this.head);
     P("hairBack", GEO.hairBack, this.head); P("longBack", GEO.longBack, this.head); P("bun", GEO.bun, this.head); P("pigL", GEO.pigL, this.head); P("pigR", GEO.pigR, this.head);
     for (let i = 0; i < 7; i++) { const sp = P("spike" + i, GEO.spike, this.head); const a = (i / 7) * Math.PI * 2; sp.position.set(Math.sin(a) * 0.16, HEAD + 0.2 + (i % 2) * 0.04, Math.cos(a) * 0.14 - 0.02); sp.rotation.set(Math.cos(a) * 0.6 - 0.2, 0, -Math.sin(a) * 0.6); }
+    for (let i = 0; i < 16; i++) { const c = P("puff" + i, GEO.puff, this.head); c.castShadow = false; const gx = (i % 4) - 1.5, gz = Math.floor(i / 4) - 1.5; c.position.set(gx * 0.155 + (Math.floor(i / 4) % 2) * 0.03, HEAD + 0.06 + 0.03 * Math.cos(i * 2.1) - Math.abs(gx) * 0.012 - (gz < -1 ? 0.03 : 0), gz * 0.15 + 0.03); c.scale.set(1, 0.85, 1); }
     P("swoop", GEO.swoop, this.head).castShadow = false; P("strand", GEO.strand, this.head).castShadow = false;
     for (const [i, x, y, z, rz, rx] of [[0, -0.14, 0.715, 0.04, -0.28, -0.12], [1, 0.03, 0.735, 0.02, -0.3, -0.18], [2, 0.18, 0.7, 0.06, -0.42, -0.12], [3, 0.08, 0.72, 0.2, -0.36, -0.42]] as const) { const l = P("lock" + i, GEO.lock, this.head); l.castShadow = false; l.position.set(x, y, z); l.rotation.set(rx, 0, rz); }
     for (let i = 0; i < 9; i++) { const c = P("curl" + i, GEO.curl, this.head); const a = (i / 9) * Math.PI * 2; c.position.set(Math.sin(a) * 0.24, HEAD * 0.95 + (i % 3) * 0.05, Math.cos(a) * 0.22 - 0.03); }
@@ -310,15 +336,19 @@ export class Blocky {
     const shirt = robot ? clothMat(o.jacket, "shirt", "metal") : o.dress ? mat(o.jacket) : clothMat(o.jacket, "shirt", o.stripes);
     p.torso.material = shirt; p.skirt.visible = !!o.dress; p.skirt.material = mat(o.dress ?? o.jacket);
     const coat = !!o.raincoat;
-    for (const n of ["coatFL", "coatFR", "coatSL", "coatSR", "coatB"]) { p[n].visible = coat; p[n].material = mat(o.raincoat ?? "#ffd23a"); }
+    const coatM = o.chill ? clothMat(o.raincoat ?? "#3f7fd6", "shirt", "djacket") : mat(o.raincoat ?? "#ffd23a");
+    for (const n of ["coatFL", "coatFR", "coatSL", "coatSR", "coatB"]) { p[n].visible = coat; p[n].material = coatM; }
+    p.lapelL.visible = p.lapelR.visible = false;
+    for (const n of ["flapL", "flapR"]) { p[n].visible = coat && !!o.chill; p[n].material = mat(shade(o.raincoat ?? "#3f7fd6", 0.86)); }
+    p.btnFL.visible = p.btnFR.visible = coat && !!o.chill; p.btnFL.material = p.btnFR.material = mat("#e8e8e8");
     p.hoodB.visible = !!o.hood; p.hoodB.material = mat(o.hood ?? o.jacket);
     p.keyp.visible = p.keys.visible = !!o.key; p.keyp.material = mat("#e9c24a", "#5a4410"); p.keys.material = mat("#2a2420");
     const sleeve0 = robot ? clothMat(o.jacket, "shirt", "metal") : o.dress ? mat(skin) : clothMat(o.jacket, "shirt", o.stripes);
-    const sleeve = coat ? mat(o.raincoat!) : sleeve0;
+    const sleeve = coat ? coatM : sleeve0;
     p.armL.material = p.armR.material = sleeve;
     p.cuffL.material = p.cuffR.material = coat ? mat(shade(o.raincoat!, 0.85)) : mat(robot ? shade(o.jacket, 0.6) : o.dress ? skin : shade(o.jacket, 0.78));
     p.handL.material = p.handR.material = p.thumbL.material = p.thumbR.material = mat(robot ? "#8a96a4" : skin);
-    p.legL.material = p.legR.material = robot ? clothMat(o.pants, "pants", "metal") : o.dress ? mat(skin) : clothMat(o.pants, "pants");
+    p.legL.material = p.legR.material = robot ? clothMat(o.pants, "pants", "metal") : o.dress ? mat(skin) : clothMat(o.pants, "pants", o.chill ? "ldenim" : undefined);
     p.shoeL.material = p.shoeR.material = mat(o.boots); p.soleL.material = p.soleR.material = mat(o.sole ?? (robot ? "#3b3f52" : "#f4f1ea")); p.toeL.material = p.toeR.material = mat(shade(o.boots, 1.25));
     p.sockL.material = p.sockR.material = mat(o.dress ? "#ffffff" : o.stripes === "dots" ? "#ff4a4a" : "#f4f1ea");
     const big = !!o.bigShoes;
@@ -327,17 +357,17 @@ export class Blocky {
     p.head.scale.set(robot ? 1.12 : 1, robot ? 1.0 : 1, robot ? 1.0 : 1);
     const expr = (s?.expr ?? f.expr ?? "neutral") as Expr, blink = Number(s?.blink ?? f.blink ?? 0);
     p.face.material = faceMat(o, expr, blink, Number(f.look ?? 0));
-    vis(["nose", "earL", "earR"], !robot); p.nose.scale.setScalar(o.handsome ? 0.75 : 1); p.nose.material = p.earL.material = p.earR.material = mat(shade(skin, 0.94));
+    vis(["nose", "earL", "earR"], !robot); p.nose.scale.setScalar(o.handsome ? 0.75 : 1); if (o.chill) p.nose.visible = false; p.nose.material = p.earL.material = p.earR.material = mat(shade(skin, 0.94));
     p.bignose.visible = !!o.clownNose; p.bignose.material = mat("#ff2a2a"); if (o.clownNose) p.nose.visible = false;
     vis(["boltL", "boltR", "antenna", "bulb"], robot); p.boltL.material = p.boltR.material = mat("#6a7480"); p.antenna.material = mat("#6a7480"); p.bulb.material = mat("#ff4a4a", "#ff2a1a");
     // ---- clothes details ----
     const det = !robot && !o.dress;
-    p.collar.visible = det || !!o.collar; p.collar.material = mat(o.collar ?? shade(o.jacket, 0.8));
+    p.collar.visible = det || !!o.collar || (coat && !!o.chill); p.collar.material = coat && o.chill ? mat(shade(o.raincoat!, 0.9)) : mat(o.collar ?? shade(o.jacket, 0.8));
     for (let i = 0; i < 3; i++) { p["btn" + i].visible = !!o.buttons || robot; p["btn" + i].material = mat(robot ? ["#ff4a4a", "#ffe14a", "#4cd06a"][i] : o.buttons ?? "#f4f1ea", robot ? ["#ff2a1a", "#ffd21a", "#2ad04a"][i] : undefined); }
     p.pocket.visible = !!o.pocket; p.pocket.material = mat(shade(o.jacket, 0.82));
     p.tie.visible = p.tieKnot.visible = !!o.tie; p.tie.material = p.tieKnot.material = mat(o.tie ?? "#d23b3b");
     p.waist.visible = p.buckle.visible = !!o.waist; p.waist.material = mat(o.waist ?? "#3a2a1e"); p.buckle.material = mat("#e9c24a");
-    p.apron.visible = !!o.apron; p.apron.material = mat(o.apron ?? "#ffffff");
+    p.apron.visible = !!o.apron && !o.dress; p.apron.material = mat(o.apron ?? "#ffffff");
     p.backpack.visible = !!o.backpack; p.backpack.material = mat(o.backpack ?? "#3f6fb5");
     p.watch.visible = !!o.watch; p.watch.material = mat(o.watch ?? "#3b3f52");
     p.bowL.visible = p.bowR.visible = !!o.clownNose; p.bowL.material = p.bowR.material = mat("#ffe14a");
@@ -346,7 +376,7 @@ export class Blocky {
     const hairOn = hat === "hair" || hat === "cap" || hat === "capback";
     vis(["hair", "fringe", "sideL", "sideR", "hairBack", "longBack", "bun", "pigL", "pigR"], false);
     for (let i = 0; i < 7; i++) p["spike" + i].visible = false;
-    vis(["swoop", "strand", "lock0", "lock1", "lock2", "lock3"], false); for (const n of ["swoop", "strand", "lock0", "lock1", "lock2", "lock3"]) p[n].material = hc;
+    vis(["swoop", "strand", "lock0", "lock1", "lock2", "lock3"], false); for (let i = 0; i < 16; i++) { p["puff" + i].visible = false; p["puff" + i].material = hc; } for (const n of ["swoop", "strand", "lock0", "lock1", "lock2", "lock3"]) p[n].material = hc;
     for (let i = 0; i < 9; i++) p["curl" + i].visible = false;
     for (let i = 0; i < 12; i++) p["wig" + i].visible = false;
     for (const n of ["hair", "fringe", "sideL", "sideR", "hairBack", "longBack", "bun", "pigL", "pigR"]) p[n].material = hc;
@@ -354,6 +384,7 @@ export class Blocky {
     if (hat === "hair") {
       if (st === "spiky") { p.hair.visible = true; for (let i = 0; i < 7; i++) { p["spike" + i].visible = true; p["spike" + i].material = hc; } }
       else if (st === "side") { p.hair.visible = p.fringe.visible = true; }
+      else if (st === "puffy") { vis(["hair", "hairBack"], true); p.sideL.visible = p.sideR.visible = true; p.sideL.scale.set(0.8, 1, 1); p.sideR.scale.set(0.8, 1, 1); for (let i = 0; i < 16; i++) p["puff" + i].visible = true; }
       else if (st === "swept") { vis(["hair", "swoop", "strand", "lock0", "lock1", "lock2", "lock3", "hairBack"], true); p.sideL.visible = p.sideR.visible = true; p.sideL.scale.set(0.7, 0.8, 1); p.sideR.scale.set(0.7, 0.8, 1); }
       else if (st === "curly" || st === "mop") { p.hair.visible = true; for (let i = 0; i < 9; i++) { p["curl" + i].visible = true; p["curl" + i].material = hc; p["curl" + i].scale.setScalar(st === "mop" ? 1.25 : 1); } }
       else if (st === "bun") { p.hair.visible = p.bun.visible = p.hairBack.visible = true; }
@@ -410,6 +441,7 @@ export class Blocky {
       if (expr === "laugh") bob += 0.02 * Math.abs(Math.sin(t * 9));
       if (robot && mode === "stand") bob += 0.006 * Math.sin(t * 13);
     }
+    if (o.dress && (mode === "stand" || mode === "walk")) { aL -= 0.14; aR += 0.14; }
     pitch += ((f.lean ?? 0) * Math.PI) / 180;
     this.armL.rotation.set(aLx, 0, aL); this.armR.rotation.set(aRx, 0, aR);
     this.legL.rotation.set(lL, 0, lLz); this.legR.rotation.set(lR, 0, lRz);
