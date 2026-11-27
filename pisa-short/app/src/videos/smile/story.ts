@@ -1,0 +1,72 @@
+// "Everyone Is Smiling" (our own two-part horror story): a seaside town on the rocks with a lighthouse.
+// PREVIEW timeline: a handful of key shots (45 frames each) to show the look before the full story is timed to the voice.
+import { getInputProps } from "remotion";
+export const FPS = 30;
+export const PART: 1 | 2 = (getInputProps() as { part?: number }).part === 2 ? 2 : 1;
+export type V3 = [number, number, number];
+
+export const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+export const smooth = (x: number) => { const u = clamp01(x); return u * u * (3 - 2 * u); };
+export const lin = (pts: [number, number][], x: number) => {
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * smooth((x - x0) / (x1 - x0)); }
+  return pts[pts.length - 1][1];
+};
+export const linR = (pts: [number, number][], x: number) => {
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+  return pts[pts.length - 1][1];
+};
+export const D0 = 0;
+
+// ---------------- places ----------------
+export const SEA_Y = -0.6;           // the sea north of the quay (z < QUAY)
+export const QUAY = -9;              // stone quay edge
+export const PIER: [V3, V3] = [[2, 0.35, -9], [2, 0.35, -34]];
+export const LH: V3 = [-26, 0, -32];  // the lighthouse rock
+export const LH_BASE = 5.5, LH_H = 16, LAMP_Y = LH_BASE + LH_H + 1.4;
+export const LAMP: V3 = [LH[0], LAMP_Y, LH[2]];
+export const STREET_Z = 3;           // the main street (x along), houses north (front z -1) and south (front z 7)
+export const LEO_HOUSE: V3 = [0, 0, 11]; // front at z 7, facing -z
+export const LEO_WIN: V3 = [0, 4.6, 7.0]; // his bedroom window (2nd floor, front)
+export const ROOM: V3 = [80, 0, 0];   // his bedroom set (window in the -z wall)
+export const BED: V3 = [ROOM[0] + 0.6, 0, ROOM[2] + 0.4];
+export const RWIN: V3 = [ROOM[0], 1.75, ROOM[2] - 2.5];
+export const LHIN: V3 = [80, 0, 40];  // inside the lighthouse (gears, the shelves of faces)
+export const SC = { hero: 1.0, adult: 1.0, kid: 0.72 };
+export const faceY = (sc: number) => 1.72 * sc;
+
+// ---------------- shots ----------------
+export type Light = "day" | "golden" | "night";
+export type ShotDef = { id: number; a: number; b: number; light: Light; party: boolean };
+const LEN = 45;
+const LIGHTS_OF: Light[] = ["day", "day", "day", "night", "night", "night", "night", "night"];
+export const SHOTS: ShotDef[] = LIGHTS_OF.map((l, i) => ({ id: i + 1, a: i * LEN, b: (i + 1) * LEN, light: l, party: false }));
+export const TOTAL = SHOTS.length * LEN;
+export const FLASH_AT = -100;
+export const shotAt = (f: number) => SHOTS.find((s) => f >= s.a && f < s.b) ?? SHOTS[SHOTS.length - 1];
+export const layersAt = (f: number): { id: number; alpha: number }[] => [{ id: shotAt(f).id, alpha: 1 }];
+
+// ---------------- camera ----------------
+export type Cam = { pos: V3; look: V3; fov: number; roll: number };
+const orb = (look: V3, d: number, el: number, az: number, fov = 40): Cam => {
+  const e = (el * Math.PI) / 180, a = (az * Math.PI) / 180;
+  return { pos: [look[0] + d * Math.sin(a) * Math.cos(e), look[1] + d * Math.sin(e), look[2] + d * Math.cos(a) * Math.cos(e)], look, fov, roll: 0 };
+};
+export const HERO_DAY: V3 = [3.0, 0, 2.2];
+export const camAt = (id: number, f: number): Cam => {
+  const k = (f % LEN) / LEN;
+  switch (id) {
+    case 1: return { pos: [3.2, 6.2 - k * 0.3, 6.0], look: [-7, 1.6, -22], fov: 54, roll: 0 };
+    case 2: return orb([HERO_DAY[0], 1.78, HERO_DAY[2]], 2.7 - k * 0.1, 4, 24, 34);
+    case 3: return { pos: [0.7, 1.7, 2.7 - k * 0.1], look: [-0.1, 1.45, 6.4], fov: 46, roll: 0 };
+    case 4: return { pos: [0.3, 5.6, 6.4], look: [-0.6, 0.4, -2.5], fov: 54, roll: 0 };
+    case 5: return { pos: [2.6, 6.8, 6.6], look: [-12, 5, -26], fov: 54, roll: 0 };
+    case 6: return { pos: [BED[0] + 1.1, 1.9 - k * 0.05, BED[2] + 1.9], look: [BED[0] - 0.05, 0.75, BED[2] - 0.55], fov: 44, roll: 0 };
+    case 7: return { pos: [BED[0] + 1.3, 1.5, BED[2] + 2.0], look: [RWIN[0], 1.6, RWIN[2]], fov: 46, roll: 0 };
+    default: return { pos: [LHIN[0] + 1.9, 1.75, LHIN[2] + 2.7], look: [LHIN[0] - 2.4, 1.7, LHIN[2] - 1.5], fov: 56, roll: 0 };
+  }
+};
+/** per-shot light direction overrides (camera-relative az, elevation) */
+export const SUN_SHOT: Record<number, { az?: number; el?: number }> = { 2: { az: 140, el: 30 }, 3: { az: 150, el: 30 } };
+export const dofAt = (_f: number) => ({ cInf: 0, focus: undefined as undefined | ((f: number) => V3) });
