@@ -19,7 +19,7 @@ export type Outfit = {
   sash?: string; sword?: boolean; moustache?: string; skin?: string; head?: number; cap?: string; hair?: string; dress?: string;
   build?: Build; beard?: string; vest?: string;
   /** detailed rigs: hair style, accessories, special builds */
-  hairStyle?: "spiky" | "side" | "curly" | "bun" | "pigtails" | "bald" | "long" | "mop" | "swept" | "puffy"; handsome?: boolean; chill?: boolean; teen?: boolean; raincoat?: string; key?: boolean; hood?: string; glasses?: string; tie?: string; waist?: string;
+  hairStyle?: "spiky" | "side" | "curly" | "bun" | "pigtails" | "bald" | "long" | "mop" | "swept" | "puffy"; handsome?: boolean; chill?: boolean; cry?: boolean; teen?: boolean; raincoat?: string; key?: boolean; hood?: string; glasses?: string; tie?: string; waist?: string;
   collar?: string; pocket?: boolean; lashes?: boolean; freckles?: boolean; blush?: boolean; apron?: string; backpack?: string;
   bigShoes?: boolean; clownNose?: boolean; robot?: boolean; stripes?: string; sole?: string; watch?: string; scale?: number;
 };

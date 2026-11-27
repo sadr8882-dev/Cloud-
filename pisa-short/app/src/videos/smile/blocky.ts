@@ -50,7 +50,7 @@ const faces = new Map<string, THREE.Material>();
 const faceMat = (o: Outfit, expr: Expr, lid: number, look = 0) => {
   const skin = o.skin ?? "#ffe2c2", moustache = o.moustache;
   const lk = Math.round(Math.max(-1, Math.min(1, look)) * 2) / 2;
-  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}|${lk}|${o.blush ? 1 : 0}${o.freckles ? 1 : 0}${o.lashes ? 1 : 0}|${o.robot ? "R" : ""}|${o.handsome ? "H" : ""}${o.chill ? "C" : ""}`;
+  const key = `${skin}|${expr}|${lid > 0.6 ? 1 : lid > 0.2 ? 0.5 : 0}|${moustache ?? ""}|${lk}|${o.blush ? 1 : 0}${o.freckles ? 1 : 0}${o.lashes ? 1 : 0}|${o.robot ? "R" : ""}|${o.handsome ? "H" : ""}${o.chill ? "C" : ""}${o.cry ? "T" : ""}`;
   let m = faces.get(key);
   if (m) return m;
   const cv = document.createElement("canvas"); cv.width = cv.height = 256;
@@ -80,6 +80,7 @@ const faceMat = (o: Outfit, expr: Expr, lid: number, look = 0) => {
     for (const x of [88, 168]) {
       g.fillStyle = "#fbfbf6"; g.strokeStyle = INK; g.lineWidth = 5; g.beginPath(); g.ellipse(x, 98, 25, 27, 0, 0, 7); g.fill(); g.stroke();
       g.fillStyle = INK; g.beginPath(); g.arc(x + lk * 4, 98, 6.5, 0, 7); g.fill();
+      if (o.cry) { g.fillStyle = "rgba(120,200,255,0.9)"; g.beginPath(); g.moveTo(x - 8, 122); g.lineTo(x + 8, 122); g.lineTo(x + 10, 250); g.lineTo(x - 10, 250); g.closePath(); g.fill(); g.fillStyle = "#cfefff"; g.beginPath(); g.ellipse(x, 130, 7, 10, 0, 0, 7); g.fill(); }
     }
     g.strokeStyle = INK; g.lineCap = "round"; g.lineWidth = 6; for (const [x, s2] of [[88, 1], [168, -1]] as const) { g.beginPath(); g.moveTo(x - 20, 56 + 4 * s2); g.quadraticCurveTo(x, 48, x + 20, 56 - 4 * s2); g.stroke(); }
     g.fillStyle = "#fbfbf6"; g.lineWidth = 7; g.beginPath(); g.moveTo(30, 146); g.quadraticCurveTo(128, 268, 226, 146); g.quadraticCurveTo(128, 178, 30, 146); g.closePath(); g.fill(); g.stroke();

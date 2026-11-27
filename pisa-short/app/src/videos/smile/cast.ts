@@ -3,7 +3,7 @@
 // into rigs, the dog, the cows, the duck and the small props.
 import * as THREE from "three";
 import { Pen, bodyFront, Outfit, Expr, FrontOpts, SKINS } from "./toon";
-import { chaseX, OBST, SHOTS, FPS, V3, SC, HERO_DAY, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01, lin, linR } from "./story";
+import { leoOut, PART, DOOR_LEO, KID, LEO_LH, KEEP_LH, GALLERY_Y, LH, chaseX, OBST, SHOTS, FPS, V3, SC, HERO_DAY, LEO_WIN, ROOM, BED, RWIN, LHIN, smooth, clamp01, lin, linR } from "./story";
 import * as X from "./fx";
 import { NOINK } from "./ink";
 import type { RigOpts } from "./blocky";
@@ -133,7 +133,7 @@ export type Place = {
 };
 export type FxPlace = { key: string; cw: number; ch: number; draw: (p: Pen) => void; x: number; y: number; z: number; w: number; h: number; flat?: boolean; face?: boolean; yaw?: number; rot?: number; soft?: boolean };
 export type CamInfo = { pos: THREE.Vector3; right: THREE.Vector3; sun: THREE.Vector3 };
-export type Stage = { places: Place[]; fx: FxPlace[]; ropes: [V3, V3][]; torch?: { p: V3; dir: V3 }; door?: number };
+export type Stage = { places: Place[]; fx: FxPlace[]; ropes: [V3, V3][]; torch?: { p: V3; dir: V3 }; door?: number; glow?: V3; clock?: boolean };
 
 // ---------------- helpers ----------------
 let TNOW = 0;
@@ -208,78 +208,133 @@ const separate = (ps: Place[]) => {
     if (d < need) { q.x = ox + (dx / (d || 1)) * need; q.z = oz + (dz / (d || 1)) * need; }
   }
 };
+
+// ---------------- per-shot staging, part 1 ----------------
+const MOM_O: Outfit = { jacket: "#c86a8a", pants: "#3b3f52", boots: "#f4f1ea", hat: "hair", hairStyle: "bun", hair: "#2a201a", dress: "#c86a8a", skin: "#f2d0b0", lashes: true };
+const LEO_KEY: Outfit = { ...LEO, key: true };
+type TC = (p: V3) => number;
+const crowdRows = (t: number, rows: number, cols: number, z0: number, look: (p: V3) => number, fo: (i: number) => Extra = () => ({})) => {
+  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) { const p: V3 = [-((cols - 1) * 1.7) / 2 + k * 1.7 + (r % 2) * 0.6, 0, z0 - r * 1.7], i = r * cols + k; creep(i, p, { yaw: look(p), ...fo(i) }, PJ(TOWN[i % TOWN.length], i)); }
+};
+const atWin = (p: V3) => Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]);
+const windowFaces = (t: number, rise = true) => {
+  const wz = RWIN[2] - 0.86;
+  [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05 - (rise ? 0.75 * (1 - smooth((t - 0.2 - i * 0.35) / 0.9)) : 0), wz + dz], { yaw: 0.15 * dx, headTilt: 6, headRoll: sync(t, 12) }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
+};
+const leoBed = (ex: Expr, blink: number, extra: Extra = {}) => leo(ex, { mode: "lie", yaw: 0, blink, y: 0.83, breathe: 1.5, ...extra }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED);
+const p1 = (id: number, t: number, toCam: TC) => {
+  switch (id) {
+    case 1: case 6: { // the town waves, every smile the same, every hand in step
+      const spots: V3[] = [[0.5, 0, 1.0], [-1.6, 0, -0.5], [2.2, 0, -1.8], [-3.2, 0, -2.0], [1.0, 0, -4.2], [3.4, 0, -5.6], [-0.6, 0, -6.6], [2, 0.35, -12], [2.6, 0.35, -16], [-4, 0, -6.8], [4.2, 0, -7.6], [-2.4, 0, -8.0]];
+      spots.forEach((p, i) => {
+        if (id === 1 && (i === 7 || i === 8)) { const z = p[2] - ((t * 1.1 + i) % 6); creep(i, [p[0], p[1], z], { mode: "walk", phase: t * 1.4 + i * 0.5, yaw: Math.PI }); return; }
+        if (id === 6 && (i === 7 || i === 8)) return;
+        creep(i, p, { yaw: toCam(p), wave: 0.5 + 0.5 * Math.sin(t * 6), headRoll: sync(t, 18) });
+      });
+      break;
+    }
+    case 2: creep(7, KID, { yaw: toCam(KID), headRoll: 6 * Math.sin(t * 1.3) }, { ...TOWN[7], cry: true } as Outfit); creep(1, [KID[0] - 1.6, 0, KID[2] - 1.8], { yaw: toCam([KID[0] - 1.6, 0, KID[2] - 1.8]) }); break;
+    case 3: {
+      leo(t < 1.1 ? "neutral" : "smile", { yaw: toCam(HERO_DAY) + 0.15 - 0.25 * smooth((t - 0.4) / 0.8), look: lin([[0, -0.6], [0.9, 0.5], [1.6, 0]], t), blink: lidAt(t, 1), breathe: 1 }, HERO_DAY);
+      for (const [i, p] of [[5, [6.5, 0, -3.5]], [1, [-1.5, 0, -2.5]]] as [number, V3][]) creep(i, p, { yaw: Math.atan2(HERO_DAY[0] - p[0], HERO_DAY[2] - p[2]) - 1.2 + 1.2 * smooth((t - 0.3) / 1.2), headRoll: 0 });
+      break;
+    }
+    case 5: creep(0, [0.5, 0, 6.2], { yaw: toCam([0.5, 0, 6.2]), lean: 5 * smooth(t / 1.8), headRoll: 0 }); break; // one face, very close: no blink
+    case 4: {
+      const door: V3 = [0, 0, 6.2], lean = 10 * smooth(t / 1.8);
+      creep(1, [door[0] - 0.75, 0, door[2]], { yaw: toCam(door), lean, headTilt: -lean * 0.5 }); creep(0, [door[0] + 0.7, 0, door[2] + 0.1], { yaw: toCam(door), lean, headTilt: -lean * 0.5 }); creep(7, [door[0] + 0.05, 0, door[2] + 0.25], { yaw: toCam(door), lean }); creep(4, [door[0] - 1.6, 0, door[2] - 0.2], { yaw: toCam(door), lean, headTilt: -lean * 0.5 });
+      if (id === 4) leo("scared", { yaw: Math.atan2(door[0] + 1.0, door[2] - 4.4), blink: 0, look: 0.5 }, [-1.0, 0, 4.4]);
+      break;
+    }
+    case 7: { // the fisherman walks away down the pier ... and his head turns all the way round
+      const p: V3 = [2.0, 0.35, -13.2 - t * 0.5];
+      creep(0, p, { mode: "walk", phase: t * 1.2, yaw: Math.PI, headYaw: 180 * smooth((t - 1.2) / 1.6), headRoll: 0 });
+      break;
+    }
+    case 8: { // Mom in the doorway: the same smile
+      put(60, MOM_O, [DOOR_LEO[0], 0, DOOR_LEO[2] - 0.4], 1, t < 0.9 ? "smile" : "creepy", { yaw: Math.PI + 0.15, blink: 0, headRoll: t > 0.9 ? 10 * smooth((t - 0.9) / 0.6) : 0 });
+      leo("nervous", { yaw: 0.4, blink: lidAt(t, 1) }, [-0.9, 0, 4.8]);
+      break;
+    }
+    case 9: leoBed("neutral", 0, { look: lin([[0, 0], [1, -0.8], [2, 0.6]], t) }); break;
+    case 10: leoBed("neutral", 0, { look: 0.8 }); OUT.clock = true; break;
+    case 11: { // midnight: every door opens and they step out, in pajamas, all at once
+      [11, 19, 27, -11, -19].forEach((x, i) => { const k = smooth((t - 0.3 - i * 0.12) / 1.4); creep(i, [x, 0, -1.4 + 2.6 * k], { mode: k < 1 ? "walk" : "stand", phase: t * 1.2, yaw: 0 }, PJ(TOWN[i], i)); });
+      [8, 16, 24].forEach((x, i) => { const k = smooth((t - 0.5 - i * 0.12) / 1.4); creep(5 + i, [x, 0, 7.4 - 2.6 * k], { mode: k < 1 ? "walk" : "stand", phase: t * 1.2, yaw: Math.PI }, PJ(TOWN[5 + i], 5 + i)); });
+      break;
+    }
+    case 12: for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) { const i = r * 4 + k, x = 2.4 - 1.6 * t + k * 1.5 + r * 0.7; creep(i, [x, 0, 2.0 - r * 0.9], { mode: "walk", phase: t * 1.5, yaw: -Math.PI / 2 }, PJ(TOWN[i % TOWN.length], i)); } break;
+    case 13: crowdRows(t, 4, 7, 4.8, atWin, (i) => { const turn = smooth((t - 0.15 * ((i * 7) % 11) * 0.12) / 0.5); return { headTilt: -32 * turn, headRoll: sync(t, 10) * turn }; }); break;
+    case 14: leoBed("neutral", 1, { breathe: 3 }); break;
+    case 15: leoBed("neutral", 1); windowFaces(t); break;
+    case 16: windowFaces(t, false); break;
+    case 17: { const jolt = smooth(t / 0.25); leo(t < 0.25 ? "neutral" : "scared", { mode: "sit", yaw: 0, blink: t < 0.2 ? 1 : 0, lean: -25 * (1 - jolt), headYaw: -55 * smooth((t - 1.3) / 0.4), breathe: 3, y: 0.02 }, [BED[0], 0.02, BED[2] - 0.62], LEO_BED); break; }
+    default: windowFaces(t, false); break;
+  }
+};
+
+// ---------------- per-shot staging, part 2 ----------------
+const lampLeo = (ex: Expr, fo: Extra = {}, o: Outfit = LEO) => leo(ex, { yaw: Math.atan2(KEEP_LH[0] - LEO_LH[0], KEEP_LH[2] - LEO_LH[2]), blink: lidAt(TNOW, 1), breathe: 2, ...fo }, LEO_LH, o);
+const keeper = (ex: Expr, fo: Extra = {}, p: V3 = KEEP_LH) => put(400, KEEPER, p, 1, ex, { yaw: Math.atan2(LEO_LH[0] - p[0], LEO_LH[2] - p[2]), blink: lidAt(TNOW, 400), breathe: 1, ...fo });
+const p2 = (id: number, t: number, toCam: TC) => {
+  switch (id) {
+    case 1: { // out of the front door at a run, then away down the street
+      const p = leoOut(t);
+      leo("scared", { mode: "run", phase: t * 2.6, yaw: t < 0.8 ? Math.PI : Math.PI + (Math.PI / 2) * smooth((t - 0.8) / 0.4), blink: 0 }, p);
+      break;
+    }
+    case 2: {
+      const lx = chaseX(t);
+      leo("scared", { mode: "run", phase: t * 2.6, yaw: -Math.PI / 2, blink: 0, headYaw: t > 1.6 && t < 2.3 ? 65 : 0, prop: "point" }, [lx, 0, 2.2]);
+      OUT.torch = { p: [lx - 0.62, 1.32, 2.7], dir: [-0.8, -0.25, -0.75] };
+      for (let r = 0; r < 2; r++) for (let k = 0; k < 5; k++) { const i = r * 5 + k, x = lx + 7 + r * 1.8 + 1.2 * t; creep(i, [x, 0, 1.0 + k * 0.85 - r * 0.3], { mode: "walk", phase: t * 1.5, yaw: -Math.PI / 2, headRoll: 0 }, PJ(TOWN[i % TOWN.length], i)); }
+      break;
+    }
+    case 3: for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) { const i = r * 4 + k, x = 3.4 - 1.6 * t + k * 1.5 + r * 0.7; creep(i, [x, 0, 1.4 - r * 0.9], { mode: "walk", phase: t * 1.5, yaw: -Math.PI / 2 }, PJ(TOWN[i % TOWN.length], i)); } break;
+    case 4: crowdRows(t, 3, 9, 4.8, atWin, () => ({ headTilt: -28 })); break;
+    case 5: { // the door bursts open and Leo runs in, stops dead, looks round
+      OUT.door = smooth((t - 0.15) / 0.3);
+      const k = smooth((t - 0.15) / 1.0), R0 = 5.4, R1 = 1.0, rr = R0 + (R1 - R0) * k, A = Math.PI / 4, p: V3 = [LHIN[0] + Math.cos(A) * rr, 0, LHIN[2] + Math.sin(A) * rr];
+      const running = t < 1.15, yw = -2.35 + (running ? 0 : 0.6 * Math.sin((t - 1.15) * 2.2));
+      leo("scared", { mode: running ? "run" : "stand", phase: t * 2.6, yaw: yw, headYaw: !running ? -40 + 80 * smooth((t - 1.2) / 0.7) : 0, blink: 0, breathe: 3, prop: t < 0.45 ? "hug" : "point" }, p);
+      if (t > 0.4) { const fw = [Math.sin(yw), Math.cos(yw)], rt = [Math.cos(yw), -Math.sin(yw)]; OUT.torch = { p: [p[0] + fw[0] * 0.62 + rt[0] * 0.5, 1.32, p[2] + fw[1] * 0.62 + rt[1] * 0.5], dir: [fw[0], -0.35, fw[1]] }; }
+      break;
+    }
+    case 6: OUT.torch = { p: [LHIN[0] + 0.6, 1.6, LHIN[2] + 0.2], dir: [-0.35 + 0.3 * Math.sin(t * 0.9), 0.15, -1] }; break; // his torch beam sweeps the gears
+    case 7: case 8: case 9: OUT.torch = { p: [LHIN[0] - 1.6, 1.7, LHIN[2] + 0.4], dir: [-1, 0.05, 0.1 + 0.2 * Math.sin(t)] }; break;
+    case 10: keeper(t < 1.0 ? "neutral" : "sad", { yaw: toCam(KEEP_LH), headYaw: -80 + 80 * smooth((t - 0.4) / 0.9), look: -0.3 }); lampLeo("scared", { blink: 0 }); break;
+    case 11: keeper("sad", { look: 0.2 }); break;
+    case 12: put(400, KEEPER, [-10, -0.04, 0.62], 1, "sad", { mode: "sit", yaw: 0, blink: lidAt(t, 400), y: -0.04, headTilt: 15, breathe: 1 }).nosep = true; break; // long ago: alone on a bench in an empty town
+    case 13: { // he builds them, and paints the smiles on
+      put(400, KEEPER, [LHIN[0] + 2.2, 0, LHIN[2] + 0.35], 1, "think", { yaw: Math.PI, blink: lidAt(t, 400), prop: "wipe", headTilt: 18 });
+      break;
+    }
+    case 14: keeper("sad", { look: 0.4 }); lampLeo("nervous"); break;
+    case 15: lampLeo("scared", { headTilt: 32 * smooth(t / 0.6), blink: 0, yaw: Math.atan2(KEEP_LH[0] - LEO_LH[0], KEEP_LH[2] - LEO_LH[2]) }, LEO_KEY); break;
+    case 16: lampLeo("teary", { headTilt: 30, blink: 0 }, LEO_KEY); OUT.glow = [LEO_LH[0] + Math.sin(Math.atan2(KEEP_LH[0] - LEO_LH[0], KEEP_LH[2] - LEO_LH[2])) * 0.24, 1.07, LEO_LH[2] + Math.cos(Math.atan2(KEEP_LH[0] - LEO_LH[0], KEEP_LH[2] - LEO_LH[2])) * 0.24]; break;
+    case 17: { // he holds the boy; the boy cries
+      const mid: V3 = [(LEO_LH[0] + KEEP_LH[0]) / 2, 0, (LEO_LH[2] + KEEP_LH[2]) / 2], y0 = Math.atan2(KEEP_LH[0] - LEO_LH[0], KEEP_LH[2] - LEO_LH[2]);
+      leo("teary", { yaw: y0, prop: "hug", blink: lidAt(t, 1), breathe: 2 }, [mid[0] + Math.sin(y0) * -0.36, 0, mid[2] + Math.cos(y0) * -0.36], LEO_KEY);
+      put(400, KEEPER, [mid[0] + Math.sin(y0) * 0.36, 0, mid[2] + Math.cos(y0) * 0.36], 1, "sad", { yaw: y0 + Math.PI, prop: "hug", blink: 1, breathe: 1 }).nosep = true;
+      break;
+    }
+    default: { // up on the gallery, the two of them; below, the whole town smiles up
+      const gy = GALLERY_Y;
+      leo("sad", { yaw: 0.2, blink: lidAt(t, 1) }, [LH[0] - 0.55, gy, LH[2] + 2.1], LEO_KEY);
+      put(400, KEEPER, [LH[0] + 0.6, gy, LH[2] + 2.0], 1, "sad", { yaw: -0.2, blink: lidAt(t, 400) }).nosep = true;
+      break;
+    }
+  }
+  void toCam;
+};
+
 export const stage = (id: number, tg: number, cam: CamInfo): Stage => {
   const t = tg - SHOTS[id - 1].a / FPS; // shot-local time
   const out: Stage = { places: [], fx: [], ropes: [] };
   OUT = out; CAM = cam; TNOW = t;
   SUN = cam.sun.clone().normalize();
   const toCam = (p: V3) => Math.atan2(cam.pos.x - p[0], cam.pos.z - p[2]);
-  switch (id) {
-    case 1: { // day: the town waves at the camera, every smile the same
-      const spots: V3[] = [[0.5, 0, 1.0], [-1.6, 0, -0.5], [2.2, 0, -1.8], [-3.2, 0, -2.0], [1.0, 0, -4.2], [3.4, 0, -5.6], [-0.6, 0, -6.6], [2, 0.35, -12], [2.6, 0.35, -16], [-4, 0, -6.8], [4.2, 0, -7.6], [-2.4, 0, -8.0]];
-      spots.forEach((p, i) => {
-        if (i === 7 || i === 8) { const z = p[2] - ((t * 1.1 + i) % 6); creep(i, [p[0], p[1], z], { mode: "walk", phase: t * 1.4 + i * 0.5, yaw: Math.PI, headYaw: 160 * smooth((t - 0.6) / 0.8) }); return; }
-        creep(i, p, { yaw: toCam(p), wave: 0.5 + 0.5 * Math.sin(t * 6), headRoll: sync(t, 18) });
-      });
-      break;
-    }
-    case 2: {
-      leo(t < 1.1 ? "neutral" : "smile", { yaw: toCam(HERO_DAY) + 0.15 - 0.25 * smooth((t - 0.4) / 0.8), look: lin([[0, -0.6], [0.9, 0.5], [1.6, 0]], t), blink: lidAt(t, 1), breathe: 1 }, HERO_DAY);
-      for (const [i, p] of [[5, [6.5, 0, -3.5]], [1, [-1.5, 0, -2.5]]] as [number, V3][]) creep(i, p, { yaw: Math.atan2(HERO_DAY[0] - p[0], HERO_DAY[2] - p[2]) - 1.2 + 1.2 * smooth((t - 0.3) / 1.2), headRoll: 0 });
-      break;
-    }
-    case 3: {
-      const door: V3 = [0, 0, 6.2], lean = 10 * smooth(t / 1.8);
-      creep(1, [door[0] - 0.75, 0, door[2]], { yaw: toCam(door), lean, headTilt: -lean * 0.5 }); creep(0, [door[0] + 0.7, 0, door[2] + 0.1], { yaw: toCam(door), lean, headTilt: -lean * 0.5 }); creep(7, [door[0] + 0.05, 0, door[2] + 0.25], { yaw: toCam(door), lean }); creep(4, [door[0] - 1.6, 0, door[2] - 0.2], { yaw: toCam(door), lean, headTilt: -lean * 0.5 });
-      leo("scared", { yaw: Math.atan2(door[0] + 1.0, door[2] - 4.4), blink: 0, look: 0.5 }, [-1.0, 0, 4.4]);
-      break;
-    }
-    case 4: leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83, breathe: 1.5, headYaw: 8 * Math.sin(t * 0.7) }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED); break;
-    case 5: { // the whole town in pajamas, in rows; one by one the heads snap up to his window
-      for (let r = 0; r < 4; r++) for (let k = 0; k < 7; k++) {
-        const p: V3 = [-5.1 + k * 1.7 + (r % 2) * 0.6, 0, 4.8 - r * 1.7]; const i = r * 7 + k, o = TOWN[i % TOWN.length];
-        const turn = smooth((t - 0.15 * ((i * 7) % 11) * 0.12) / 0.5);
-        creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -32 * turn, headRoll: sync(t, 10) * turn }, PJ(o, i));
-      }
-      break;
-    }
-    case 6: { // faces rise into the window over the sleeping boy
-      leo("neutral", { mode: "lie", yaw: 0, blink: 1, y: 0.83 }, [BED[0], 0.62, BED[2] + 1.12], LEO_BED);
-      const wz = RWIN[2] - 0.86;
-      [[-0.36, 0.02, 0], [0.36, 0.06, 0], [0.0, 0.14, -0.7]].forEach(([dx, dy, dz], i) => (creep(i + 3, [RWIN[0] + dx, dy - (1.62 - RWIN[1]) - 0.05 - 0.75 * (1 - smooth((t - 0.2 - i * 0.35) / 0.9)), wz + dz], { yaw: 0.15 * dx, headTilt: 6, headRoll: sync(t, 12) }, PJ(TOWN[(i + 3) % TOWN.length], i)).nosep = true));
-      break;
-    }
-    case 7: { // he wakes: sits bolt upright, eyes wide, turns to the window
-      const jolt = smooth(t / 0.25);
-      leo(t < 0.25 ? "neutral" : "scared", { mode: "sit", yaw: 0, blink: t < 0.2 ? 1 : 0, lean: -25 * (1 - jolt), headYaw: -55 * smooth((t - 1.3) / 0.4), breathe: 3, y: 0.02 }, [BED[0], 0.02, BED[2] - 0.62], LEO_BED);
-      break;
-    }
-    case 8: { // the chase: Leo runs down the night street with a torch, the town marches after him in perfect step
-      const lx = chaseX(t);
-      leo("scared", { mode: "run", phase: t * 2.6, yaw: -Math.PI / 2, look: 0, blink: 0, headYaw: t > 0.9 && t < 1.4 ? 65 : 0, prop: "point" }, [lx, 0, 2.2]);
-      out.torch = { p: [lx - 0.62, 1.32, 2.2 + 0.5], dir: [-0.8, -0.25, -0.75] }; // from the pointing right hand, aimed away from the lens
-      for (let r = 0; r < 2; r++) for (let k = 0; k < 5; k++) { const i = r * 5 + k, x = lx + 7 + r * 1.8 + 1.2 * t; creep(i, [x, 0, 1.0 + k * 0.85 - r * 0.3], { mode: "walk", phase: t * 1.5, yaw: -Math.PI / 2, headRoll: 0 }, PJ(TOWN[i % TOWN.length], i)); }
-      break;
-    }
-    case 9: { // close on their feet: wet cobbles, every foot lands at the same moment
-      for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) { const i = r * 4 + k, x = 2.4 - 1.6 * t + k * 1.5 + r * 0.7; creep(i, [x, 0, 2.0 - r * 0.9], { mode: "walk", phase: t * 1.5, yaw: -Math.PI / 2 }, PJ(TOWN[i % TOWN.length], i)); }
-      break;
-    }
-    case 10: { // wide: the lighthouse beam over the bay, tiny figures in the fog
-      for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) { const p: V3 = [-6.8 + k * 1.7, 0, 4.8 - r * 1.7], i = r * 9 + k; creep(i, p, { yaw: Math.atan2(LEO_WIN[0] - p[0], LEO_WIN[2] - p[2]), headTilt: -28 }, PJ(TOWN[i % TOWN.length], i)); }
-      break;
-    }
-    case 11: { // the lamp-room door is shut... it bursts open and Leo runs in, stops dead, looks round at the turning gears
-      out.door = smooth((t - 0.15) / 0.3);
-      const k = smooth((t - 0.15) / 1.0), R0 = 5.4, R1 = 1.0, rr = R0 + (R1 - R0) * k, A = Math.PI / 4, p: V3 = [LHIN[0] + Math.cos(A) * rr, 0, LHIN[2] + Math.sin(A) * rr];
-      const running = t < 1.15, yw = -2.35 + (running ? 0 : 0.6 * Math.sin((t - 1.15) * 2.2));
-      leo("scared", { mode: running ? "run" : "stand", phase: t * 2.6, yaw: yw, headYaw: !running ? -40 + 80 * smooth((t - 1.2) / 0.7) : 0, blink: 0, breathe: 3, prop: t < 0.45 ? "hug" : "point" }, p);
-      if (t > 0.4) { const fw = [Math.sin(yw), Math.cos(yw)], rt = [Math.cos(yw), -Math.sin(yw)]; out.torch = { p: [p[0] + fw[0] * 0.62 + rt[0] * 0.5, 1.32, p[2] + fw[1] * 0.62 + rt[1] * 0.5], dir: [fw[0], -0.35, fw[1]] }; }
-      break;
-    }
-    case 12: break; // the shelves of faces slide by ... the last label reads LEO
-    case 13: put(400, KEEPER, [LHIN[0] - 1.1, 0, LHIN[2] + 0.6], 1, t < 1.2 ? "neutral" : "smile", { headYaw: -70 + 70 * smooth((t - 0.5) / 0.9), breathe: 1, yaw: toCam([LHIN[0] - 1.1, 0, LHIN[2] + 0.6]) + 0.35, look: -0.6, blink: lidAt(t, 400) }); break;
-  }
+  if (PART === 1) p1(id, t, toCam); else p2(id, t, toCam);
   separate(out.places);
   void ROOM; void smooth; void clamp01; void lin; void linR; void bubble; void word; void yawTo; void mixV; void Q; void fx; void HAPPY; void SCARED; void CALM;
   return out;

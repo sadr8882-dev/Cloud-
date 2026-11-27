@@ -109,6 +109,7 @@ export class World {
   private bulbMat = new THREE.MeshBasicMaterial({ color: "#f6e7a6" });
   private torch = new THREE.Group();
   private lhDoor!: THREE.Mesh; private lhDoorRy = 0;
+  private secHand!: THREE.Mesh; private keyGlow!: THREE.Sprite;
   private frustum = new THREE.Frustum();
   private m4 = new THREE.Matrix4(); private v = new THREE.Vector3(); private sph = new THREE.Sphere();
 
@@ -335,7 +336,7 @@ export class World {
         const sheet = new THREE.Mesh(new RoundedBoxGeometry(1.64, 0.1, 0.3, 3, 0.05).rotateX(0.18).translate(bx, 1.0, bz - 0.26), new THREE.MeshLambertMaterial({ color: "#f4f1ea" })); sheet.receiveShadow = true; R.add(sheet);
       }
       b.add(uvBox(bx + 0.9, 0, bz - 1.1, bx + 1.4, 0.6, bz - 0.6, 1), wood);
-      b.add(new THREE.CylinderGeometry(0.1, 0.14, 0.32, 10).translate(bx + 1.15, 0.76, bz - 0.85), lam("sLampR", () => ({ color: "#e9cf8f" })));
+      b.add(new THREE.CylinderGeometry(0.1, 0.14, 0.32, 10).translate(bx + 1.3, 0.76, bz - 0.68), lam("sLampR", () => ({ color: "#e9cf8f" })));
       for (let k = 0; k < 4; k++) b.add(new THREE.BoxGeometry(0.06, 0.26, 0.2).translate(rx - W2 + 0.3 + k * 0.08, 1.95, rz - 0.6), lam("sBook" + k, () => ({ color: ["#c8302c", "#2f6f8a", "#f2c94c", "#3a6a4a"][k] })));
       b.add(uvBox(rx - W2, 1.8, rz - 1.0, rx - W2 + 0.35, 1.84, rz + 0.4, 1), wood);
       b.add(new THREE.BoxGeometry(0.16, 0.18, 0.5).translate(rx - W2 + 0.18, 1.94, rz + 0.05), lam("sShip", () => ({ color: "#7a4f33" })));
@@ -382,6 +383,8 @@ export class World {
       b.add(uvBox(ix + 1.2, 0, iz - 1.2, ix + 3.2, 0.95, iz + 0.2, 1), wood); // bench
       b.add(new THREE.BoxGeometry(1.2, 0.02, 0.8).translate(ix + 2.2, 0.96, iz - 0.5), lam("sPlan", () => ({ map: labelTex("plan", "PLAN No.1"), color: "#d8e4f0" })));
       b.add(new THREE.CylinderGeometry(0.12, 0.16, 0.36, 10).translate(ix + 1.6, 1.13, iz - 0.9), this.lampMat);
+      b.add(new THREE.BoxGeometry(0.42, 0.42, 0.42).translate(ix + 2.3, 1.17, iz - 0.55), lam("sSkin0", () => ({ color: "#f6c99f" }))); b.add(new THREE.PlaneGeometry(0.4, 0.4).rotateY(Math.PI).translate(ix + 2.3, 1.17, iz - 0.765), lam("sSpare0", () => ({ map: spareFace(0) }))); // the head he is painting
+      b.add(new THREE.CylinderGeometry(0.015, 0.01, 0.3, 6).rotateZ(1.1).translate(ix + 2.75, 1.0, iz - 0.4), lam("sBrush", () => ({ color: "#8a5a34" })));
       for (let k = 0; k < 10; k++) { const a = k * 0.62, y = 0.25 + k * 0.42; b.add(new THREE.BoxGeometry(1.1, 0.06, 0.4).rotateY(-a).translate(ix + 0.5 + Math.cos(a) * 0.6, y, iz + 2.75 + Math.sin(a) * 0.6), iron); } // spiral stair, clear of the path from the door
       b.add(new THREE.CylinderGeometry(0.08, 0.08, 4.6, 8).translate(ix + 0.5, 2.3, iz + 2.75), iron);
       const ceil = new THREE.Mesh(new THREE.CylinderGeometry(Rr + 0.3, Rr + 0.3, 0.2, 24).translate(ix, H3 + 0.1, iz), lam("sCeilL", () => ({ map: plankTex("g", "#3a2c20") }))); ceil.castShadow = false; ceil.receiveShadow = false; R.add(ceil);
@@ -457,6 +460,7 @@ export class World {
       tc.layers.set(NOINK); this.torch.add(tc);
       const tg = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(2.0, 1.8, 1.2), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); tg.scale.setScalar(0.28); tg.layers.set(NOINK); this.torch.add(tg);
       R.add(this.torch);
+      this.keyGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: new THREE.Color(2.4, 1.8, 0.6), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); this.keyGlow.layers.set(NOINK); R.add(this.keyGlow);
       for (let x = -56; x <= 56; x += 4) { const f = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: softTex(), color: new THREE.Color(0.9, 0.95, 1), transparent: true, opacity: 0.4, depthWrite: false })); f.position.set(x, SEA_Y + 0.03, QUAY - 1.1); f.layers.set(NOINK); this.foams.push(f); R.add(f); }
       // ---- bedroom extras: desk + chair with the denim jacket, bookshelf, alarm clock, slippers, a photo, a guitar, a toy boat
       const [rx, , rz] = ROOM, [bx, , bz] = BED;
@@ -467,7 +471,14 @@ export class World {
       for (let k = 0; k < 6; k++) b.add(new THREE.BoxGeometry(0.22, 0.03, 0.3).translate(rx - 2.2, 0.82 + k * 0.03, rz + 2.0), lam("sPaper" + (k % 2), () => ({ color: k % 2 ? "#f4f1ea" : "#e8dcc0" })));
       b.add(uvBox(rx + 2.4, 0, rz + 0.4, rx + 2.95, 1.9, rz + 1.6, 1), woodD);
       for (let s2 = 0; s2 < 4; s2++) { b.add(uvBox(rx + 2.42, 0.1 + s2 * 0.45, rz + 0.42, rx + 2.93, 0.13 + s2 * 0.45, rz + 1.58, 1), wood); for (let k = 0; k < 7; k++) b.add(new THREE.BoxGeometry(0.3, 0.26 + (k % 3) * 0.04, 0.07).translate(rx + 2.7, 0.27 + s2 * 0.45 + (k % 3) * 0.02, rz + 0.55 + k * 0.14), lam("sBk" + ((k + s2) % 5), () => ({ color: ["#c8302c", "#2f6f8a", "#f2c94c", "#3a6a4a", "#8a4ab0"][(k + s2) % 5] }))); }
-      b.add(uvBox(bx + 1.0, 0.6, bz - 0.98, bx + 1.2, 0.74, bz - 0.9, 1), lam("sClock", () => ({ color: "#e2453c" })));
+      { // the ticking alarm clock on the nightstand: red body, two bells, a face with numbers, a second hand that steps
+        const cx2 = bx + 1.05, cy2 = 0.78, cz2 = bz - 0.95, red2 = lam("sClock", () => ({ color: "#e2453c" }));
+        b.add(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 24).rotateX(Math.PI / 2).translate(cx2, cy2, cz2), red2);
+        for (const sx of [-1, 1]) { b.add(new THREE.SphereGeometry(0.06, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(cx2 + sx * 0.09, cy2 + 0.15, cz2), lam("sBell", () => ({ color: "#c9a23a" }))); b.add(new THREE.BoxGeometry(0.03, 0.06, 0.03).translate(cx2 + sx * 0.1, cy2 - 0.16, cz2), red2); }
+        const face = ctex("clockFace", 256, 256, (g) => { g.fillStyle = "#fbf6ea"; g.beginPath(); g.arc(128, 128, 126, 0, 7); g.fill(); g.fillStyle = "#241726"; g.font = "700 34px 'DejaVu Sans', sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; for (let n = 1; n <= 12; n++) { const a = (n / 12) * Math.PI * 2; g.fillText("" + n, 128 + Math.sin(a) * 96, 128 - Math.cos(a) * 96); } g.lineWidth = 9; g.lineCap = "round"; g.strokeStyle = "#241726"; g.beginPath(); g.moveTo(128, 128); g.lineTo(128, 64); g.stroke(); g.beginPath(); g.moveTo(128, 128); g.lineTo(170, 150); g.stroke(); });
+        const fm = new THREE.Mesh(new THREE.CircleGeometry(0.13, 32), new THREE.MeshLambertMaterial({ map: face })); fm.position.set(cx2, cy2, cz2 + 0.051); R.add(fm);
+        this.secHand = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.11, 0.004).translate(0, 0.05, 0), new THREE.MeshBasicMaterial({ color: "#e2453c" })); this.secHand.position.set(cx2, cy2, cz2 + 0.056); R.add(this.secHand);
+      }
       for (const sx of [-0.12, 0.12]) b.add(uvBox(bx + 0.95 + sx - 0.07, 0, bz + 1.25, bx + 0.95 + sx + 0.07, 0.06, bz + 1.5, 1), lam("sSlipper", () => ({ color: "#8a3a3a" })));
       b.add(new THREE.PlaneGeometry(0.34, 0.26).rotateY(-Math.PI / 2).translate(rx + 2.99, 1.6, rz - 1.2), lam("sPhoto", () => ({ map: labelTex("photo", "MOM & ME") })));
       { const gx = rx + 2.6, gz = rz - 1.9, gm = lam("sGuitar", () => ({ color: "#b8742a" })); b.add(new THREE.SphereGeometry(0.22, 12, 8).scale(1, 1.15, 0.35).translate(gx, 0.3, gz), gm); b.add(new THREE.SphereGeometry(0.17, 12, 8).scale(1, 1, 0.35).translate(gx, 0.62, gz), gm); b.add(new THREE.BoxGeometry(0.07, 0.65, 0.05).translate(gx, 1.05, gz), woodD); }
@@ -510,7 +521,7 @@ export class World {
     cam.layers.enable(NOINK);
     const K = LOOK[s.light], sunDir = this.shotSun(id, s, L);
     this.hemi.color.set(night ? "#5a70b0" : "#9cc4ff"); this.hemi.groundColor.set(night ? "#1a2030" : "#6a8a4a"); this.hemi.intensity = night ? 1.1 : 2.1;
-    this.sun.color.set(night ? "#9ab4ff" : "#ffe6c0"); this.sun.intensity = night ? 1.9 : 4.7; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
+    this.sun.color.set(night ? "#9ab4ff" : s.light === "golden" ? "#ffa860" : "#ffe6c0"); this.sun.intensity = night ? 1.9 : 4.7; this.sun.shadow.radius = 4; this.sun.shadow.blurSamples = 12;
     let Rr = THREE.MathUtils.clamp(dist * 1.15 + 7, 12, 95);
     if (dist > 30) Rr = Math.max(Rr, 70);
     this.sun.position.copy(focus).addScaledVector(sunDir, 260); this.sun.target.position.copy(focus);
@@ -522,12 +533,13 @@ export class World {
     CHAR.uCharTint.value.set(...L.charTint); CHAR.uCharShade.value = L.charShade; CHAR.uGrad.value = L.charGrad;
     CHAR.uBodyGrad.value = L.bodyGrad; CHAR.uSideTint.value.set(...L.sideTint);
     const su = this.skyMat.uniforms;
-    const SKY = night ? ["#2c3c6a", "#1e2c58", "#142048", "#0c163a", "#060c26"] : ["#c8e4f6", "#9ccff2", "#6ab4ec", "#4294e2", "#2a74d6"];
+    const golden = s.light === "golden";
+    const SKY = night ? ["#2c3c6a", "#1e2c58", "#142048", "#0c163a", "#060c26"] : golden ? ["#ffc488", "#ffa66e", "#f08a72", "#b8709a", "#5a4e9a"] : ["#c8e4f6", "#9ccff2", "#6ab4ec", "#4294e2", "#2a74d6"];
     SKY.forEach((h, i) => untone(h, su["c" + i].value));
     const e = K.sky.e.map((dg) => THREE.MathUtils.degToRad(dg));
     su.e.value.set(e[1], e[2], e[3], e[4]); su.stars.value = night ? 1 : 0;
     this.sky.position.copy(cam.position);
-    untone(night ? "#26345a" : "#bcdaf2", this.fog.color); this.fog.near = night ? 12 : 80; this.fog.far = night ? 140 : 560;
+    untone(night ? "#26345a" : golden ? "#f2c49a" : "#bcdaf2", this.fog.color); this.fog.near = night ? 12 : 80; this.fog.far = night ? 140 : 560;
     const clear = CLEAR_SHOTS.includes(id);
     scene.fog = clear ? null : this.fog; scene.background = null; this.sun.castShadow = !clear;
     // moon high over the sea (north-west), its glint on the water
@@ -563,6 +575,9 @@ export class World {
     const st = stage(id, t, { pos: cam.position, right, sun: sunDir });
     this.frustum.setFromProjectionMatrix(this.m4.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     if (this.lhDoor) this.lhDoor.rotation.y = this.lhDoorRy - 1.9 * (st.door ?? 1);
+    this.keyGlow.visible = !!st.glow;
+    if (st.glow) { this.keyGlow.position.set(...st.glow); this.keyGlow.scale.setScalar(0.18 + 0.05 * Math.sin(t * 6)); }
+    if (this.secHand) this.secHand.rotation.z = -Math.floor(t) * (Math.PI / 30);
     this.torch.visible = !!st.torch;
     if (st.torch) { const [px2, py2, pz2] = st.torch.p, d = V(...st.torch.dir).normalize(); this.torch.position.set(px2, py2, pz2); this.torch.quaternion.setFromUnitVectors(V(0, -1, 0), d); }
     let ai = 0, ri = 0;
